@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鱼竿枪指令生成器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        :root{--bg:#f5f5f5;--surface:#fff;--surface-2:#fafafa;--surface-3:#f0f0f0;--border:#e8e8e8;--border-hover:#d5d5d5;--text-1:#1a1a1a;--text-2:#555;--text-3:#888;--text-4:#bbb;--accent:#1a1a1a;--accent-light:rgba(26,26,26,0.06);--green:#22863a;--green-bg:rgba(34,134,58,0.08);--purple:#6f42c1;--purple-bg:rgba(111,66,193,0.08);--amber:#b38600;--amber-bg:rgba(179,134,0,0.08);--red:#cf222e;--red-bg:rgba(207,34,46,0.06);--radius:10px;--radius-sm:6px}
+        body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-1);line-height:1.6;min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
+        .mono{font-family:'JetBrains Mono',monospace}
+        .header{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:52px;animation:headerIn .5s ease-out}
+        @keyframes headerIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+        .container{max-width:1160px;margin:0 auto;padding:0 24px}
+        .header-inner{height:100%;display:flex;align-items:center;justify-content:space-between}
+        .logo{display:flex;align-items:center;gap:10px}
+        .logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;animation:dotPulse 2.5s ease-in-out infinite}
+        @keyframes dotPulse{0%,100%{box-shadow:0 0 0 0 rgba(26,26,26,0.2)}50%{box-shadow:0 0 0 5px rgba(26,26,26,0)}}
+        .logo-text{font-size:16px;font-weight:700;color:var(--text-1);letter-spacing:-0.02em}
+        .logo-sep{color:var(--border);margin:0 1px}
+        .logo-sub{font-size:14px;font-weight:400;color:var(--text-3)}
+        .version{font-size:11px;color:var(--text-3);background:var(--surface-2);padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-weight:500}
+        .main{padding-top:72px;padding-bottom:48px}
+        .layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+        @media(max-width:860px){.layout{grid-template-columns:1fr}}
+        .panel{display:flex;flex-direction:column;gap:12px}
+        .card{background:var(--surface);border-radius:var(--radius);padding:20px 22px;border:1px solid var(--border);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out forwards}
+        .card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.1s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.2s}
+        @keyframes cardIn{to{opacity:1;transform:translateY(0)}}
+        .card-head{display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;user-select:none;-webkit-user-select:none}
+        .card-head svg{width:16px;height:16px;color:var(--text-3);stroke-width:1.8;flex-shrink:0}
+        .card-title{font-size:12px;font-weight:700;color:var(--text-1);text-transform:uppercase;letter-spacing:.07em}
+        .card-chevron{margin-left:auto;color:var(--text-4);transition:transform .3s}
+        .card-chevron svg{width:14px;height:14px}
+        .card.collapsed .card-chevron{transform:rotate(-90deg)}
+        .card-body{display:grid;gap:14px;overflow:hidden;transition:max-height .35s ease,opacity .25s ease}
+        .card.collapsed .card-body{max-height:0!important;opacity:0;gap:0}
+        label.field{display:block}
+        .field-label{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-3);margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+        .field-label svg{width:12px;height:12px;color:var(--text-4);stroke-width:1.8}
+        .field-hint{color:var(--text-4);font-weight:400;text-transform:none;letter-spacing:0}
+        input[type="text"],input[type="number"]{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;transition:border-color .2s,box-shadow .2s;background:var(--surface-2);color:var(--text-1)}
+        input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-light)}
+        input.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+        .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+        .check-item{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;transition:border-color .2s,background .2s,transform .15s;gap:8px}
+        .check-item:hover{border-color:var(--border-hover);background:var(--surface-3)}
+        .check-item:active{transform:scale(.985)}
+        .check-info{flex:1;min-width:0}
+        .check-label{font-size:12px;font-weight:500;color:var(--text-1)}
+        .check-desc{font-size:10px;color:var(--text-3);margin-top:1px}
+        input[type="checkbox"]{width:15px;height:15px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+        .btn-group{display:flex;gap:8px;margin-bottom:14px}
+        .btn{padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;border:none;position:relative;overflow:hidden}
+        .btn svg{width:15px;height:15px}
+        .btn-main{background:var(--accent);color:#fff;flex:1}
+        .btn-main:hover{background:#333;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+        .btn-main:active{transform:translateY(0);box-shadow:none}
+        .btn .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:rippleOut .55s ease-out;pointer-events:none}
+        @keyframes rippleOut{to{transform:scale(4);opacity:0}}
+        .btn-sec{background:var(--surface);color:var(--text-1);border:1px solid var(--border);flex:1}
+        .btn-sec:hover{border-color:var(--border-hover);background:var(--surface-2)}
+        .donate-strip{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out .25s forwards}
+        .donate-strip svg{width:16px;height:16px;color:var(--text-4);stroke-width:1.8;flex-shrink:0}
+        .donate-text{flex:1;font-size:12px;color:var(--text-3);line-height:1.4}
+        .donate-text strong{color:var(--text-2);font-weight:500}
+        .btn-donate{padding:5px 12px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:all .2s}
+        .btn-donate svg{width:11px;height:11px}
+        .btn-donate:hover{border-color:var(--border-hover);color:var(--text-1)}
+        .out-card{background:var(--surface);border-radius:var(--radius);padding:20px 22px;border:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:64px;max-height:calc(100vh - 88px);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out .12s forwards}
+        .out-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+        .out-title{font-size:12px;font-weight:700;color:var(--text-1);text-transform:uppercase;letter-spacing:.07em}
+        .out-count{font-size:11px;color:var(--text-4);font-family:'JetBrains Mono',monospace;transition:color .3s}
+        .out-count.fresh{color:var(--green)}
+        .out-sub{font-size:11px;color:var(--text-3);margin-bottom:12px}
+        .badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+        .badge{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:600;letter-spacing:.02em}
+        .b-chain{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,134,58,.15)}
+        .b-repeat{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(111,66,193,.15)}
+        .b-setup{background:var(--surface-3);color:var(--text-3);border:1px solid var(--border)}
+        .cmd-list{flex:1;overflow-y:auto;padding-right:4px}
+        .cmd-list::-webkit-scrollbar{width:4px}
+        .cmd-list::-webkit-scrollbar-track{background:transparent}
+        .cmd-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+        .cmd-item{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:5px;border-left:3px solid var(--amber);opacity:0;transform:translateY(8px);transition:border-color .2s,box-shadow .2s}
+        .cmd-item.show{animation:cmdIn .3s ease-out forwards}
+        @keyframes cmdIn{to{opacity:1;transform:translateY(0)}}
+        .cmd-item:hover{border-color:var(--border-hover);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+        .cmd-item.chain{border-left-color:var(--green)}
+        .cmd-item.repeat{border-left-color:var(--purple)}
+        .cmd-item.setup{border-left-color:var(--text-4)}
+        .cmd-item.sec{border-left-color:var(--red);margin-top:12px;background:var(--red-bg)}
+        .cmd-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+        .cmd-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+        .cmd-name{font-size:12px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .cmd-copy{font-size:10px;color:var(--text-3);background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:3px;font-weight:500;transition:all .2s}
+        .cmd-copy svg{width:11px;height:11px}
+        .cmd-copy:hover{background:var(--accent-light);border-color:var(--border-hover);color:var(--text-1)}
+        .cmd-code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg);padding:8px 10px;border-radius:4px;border:1px solid var(--border);word-break:break-all;line-height:1.65;color:var(--text-2)}
+        .cmd-note{font-size:10px;color:var(--text-3);margin-top:5px;display:flex;align-items:center;gap:3px}
+        .cmd-note svg{width:11px;height:11px;stroke-width:2}
+        .cmd-type{font-size:9px;font-weight:600;padding:1px 5px;border-radius:2px;background:var(--surface-3);color:var(--text-3);margin-left:4px;white-space:nowrap}
+        .cmd-type.delay{background:var(--amber-bg);color:var(--amber)}
+        .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:var(--text-4);gap:10px}
+        .empty svg{width:40px;height:40px;color:var(--border);stroke-width:1;animation:emptyFloat 3s ease-in-out infinite}
+        @keyframes emptyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        .empty p{font-size:13px}
+        .footer{border-top:1px solid var(--border);padding:16px 0;background:var(--surface)}
+        .footer-inner{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-3)}
+        @media(max-width:600px){.footer-inner{flex-direction:column;gap:4px;text-align:center}}
+        .modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+        .modal.show{display:flex}
+        .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+        .modal-box{position:relative;background:var(--surface);border-radius:12px;padding:28px;max-width:340px;width:100%;text-align:center;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,.1);animation:modalIn .3s cubic-bezier(.16,1,.3,1)}
+        @keyframes modalIn{from{transform:scale(.95) translateY(12px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+        .modal-icon{width:44px;height:44px;background:var(--surface-2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--text-3)}
+        .modal-icon svg{width:20px;height:20px;stroke-width:1.8}
+        .modal-title{font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:6px}
+        .modal-text{font-size:12px;color:var(--text-3);margin-bottom:18px;line-height:1.5}
+        .qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+        .qr-box{aspect-ratio:1;background:var(--surface-2);border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-4)}
+        .btn-close{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-weight:600;transition:background .2s}
+        .btn-close:hover{background:#333}
+        .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);color:var(--text-1);padding:10px 16px;border-radius:var(--radius-sm);font-size:12px;z-index:200;font-weight:500;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.08);display:flex;align-items:center;gap:7px;animation:toastIn .3s cubic-bezier(.16,1,.3,1)}
+        .toast svg{width:14px;height:14px;color:var(--green)}
+        .toast.out{animation:toastOut .25s ease-in forwards}
+        @keyframes toastIn{from{transform:translateY(12px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+        @keyframes toastOut{to{transform:translateY(6px) scale(.97);opacity:0}}
+        .hidden{display:none!important}
+        @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container header-inner">
+            <div class="logo"><span class="logo-dot"></span><span class="logo-text">鱼竿枪生成器</span><span class="logo-sep">/</span><span class="logo-sub">V2.0</span></div>
+            <span class="version">1.20+ Bedrock</span>
+        </div>
+    </header>
+    <main class="main">
+        <div class="container layout">
+            <div class="panel">
+                <!-- 基础设置 -->
+                <div class="card" id="c1">
+                    <div class="card-head" onclick="toggleCard('c1')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 17.66l-4.24 4.24M23 12h-6m-6 0H1m20.24 4.24l-4.24-4.24M6.34 6.34L2.1 2.1"/></svg>
+                        <span class="card-title">基础设置</span>
+                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row2">
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg> 武器标签</div><input type="text" id="tag" value="枪" class="mono" style="color:#1a73e8"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> 基础伤害</div><input type="number" id="dmg" value="20" min="1"></label>
+                        </div>
+                        <div class="row3">
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg> 射程</div><input type="number" id="dist" value="32" min="5" max="128"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 2v4M8 2v4M2 10h20"/></svg> 弹匣</div><input type="number" id="magSize" value="30" min="1"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> 备弹</div><input type="number" id="totalAmmo" value="999" min="1"></label>
+                        </div>
+                        <div class="row3">
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 射击间隔</div><input type="number" id="fireRate" value="0" min="0" max="60"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> 换弹时间</div><input type="number" id="reloadTime" value="40" min="1" max="200"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 连射数</div><input type="number" id="burstCount" value="1" min="1" max="10"></label>
+                        </div>
+                    </div>
+                </div>
+                <!-- 特效选项 -->
+                <div class="card" id="c2">
+                    <div class="card-head" onclick="toggleCard('c2')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <span class="card-title">特效选项</span>
+                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+                    </div>
+                    <div class="card-body">
+                        <label class="field"><div class="field-label">轨迹粒子</div><input type="text" id="particle" value="minecraft:balloon_gas_particle" class="mono"></label>
+                        <label class="field"><div class="field-label">射击音效</div><input type="text" id="sndShoot" value="mob.zombie.woodbreak" class="mono"></label>
+                        <label class="field"><div class="field-label">换弹音效</div><input type="text" id="sndReload" value="armor.equip_leather" class="mono"></label>
+                        <div class="check-grid">
+                            <label class="check-item"><div class="check-info"><div class="check-label">穿墙检测</div><div class="check-desc">遇方块停止</div></div><input type="checkbox" id="wallCheck" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">显示粒子</div><div class="check-desc">子弹飞行轨迹</div></div><input type="checkbox" id="particleOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">射击音效</div><div class="check-desc">开火时播放</div></div><input type="checkbox" id="soundOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">屏幕抖动</div><div class="check-desc">相机震动</div></div><input type="checkbox" id="shakeOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">枪口粒子</div><div class="check-desc">开火闪光效果</div></div><input type="checkbox" id="muzzleOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">散射偏移</div><div class="check-desc">随机弹道偏移</div></div><input type="checkbox" id="spreadOn"></label>
+                        </div>
+                    </div>
+                </div>
+                <!-- 弹药系统 -->
+                <div class="card" id="c3">
+                    <div class="card-head" onclick="toggleCard('c3')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                        <span class="card-title">弹药系统</span>
+                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="check-grid">
+                            <label class="check-item"><div class="check-info"><div class="check-label">弹药计数</div><div class="check-desc">弹匣+备弹</div></div><input type="checkbox" id="ammoOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">换弹系统</div><div class="check-desc">空弹自动换弹</div></div><input type="checkbox" id="reloadOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">弹药补给</div><div class="check-desc">抬头+消耗物品</div></div><input type="checkbox" id="supplyOn"></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">HUD显示</div><div class="check-desc">弹匣/备弹/冷却</div></div><input type="checkbox" id="hudOn" checked></label>
+                        </div>
+                        <div id="supplyWrap" class="hidden" style="display:grid;gap:10px">
+                            <label class="field"><div class="field-label">补给物品ID</div><input type="text" id="supplyItem" value="white_candle" class="mono"></label>
+                            <div class="row2">
+                                <label class="field"><div class="field-label">补给弹药量</div><input type="number" id="supplyAmount" value="100" min="1"></label>
+                                <label class="field"><div class="field-label">补给最大上限</div><input type="number" id="supplyMax" value="999" min="1"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="donate-strip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    <span class="donate-text">免费开源工具，<strong>欢迎支持</strong></span>
+                    <button class="btn-donate" onclick="showDonate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> 赞赏</button>
+                </div>
+            </div>
+            <!-- 输出面板 -->
+            <div class="out-card">
+                <div class="btn-group">
+                    <button class="btn btn-main" onclick="gen(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg> 生成指令</button>
+                    <button class="btn btn-sec" onclick="copyAll(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 复制全部</button>
+                </div>
+                <div class="out-head"><span class="out-title">命令方块序列</span><span class="out-count" id="cmdCount"></span></div>
+                <div class="out-sub">未标注均为 循环 · 无条件 · 保持开启</div>
+                <div class="badges"><span class="badge b-repeat">循环</span><span class="badge b-chain">连锁</span><span class="badge b-setup">设置</span></div>
+                <div id="out" class="cmd-list"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg><p>配置参数后点击生成</p></div></div>
+            </div>
+        </div>
+    </main>
+    <footer class="footer"><div class="container footer-inner"><span>鱼竿枪生成器 · 基岩版无实体射线枪 V2.0</span><span>参考 木薯 NX鱼竿枪</span></div></footer>
+    <div id="modal" class="modal" onclick="if(event.target.classList.contains('modal-bg'))hideDonate()"><div class="modal-bg"></div><div class="modal-box"><div class="modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div><div class="modal-title">感谢支持</div><div class="modal-text">你的支持是我们持续更新的动力</div><div class="qr-grid"><div><div class="qr-box">微信赞赏码</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">微信</div></div><div><div class="qr-box">支付宝赞赏码</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">支付宝</div></div></div><button class="btn-close" onclick="hideDonate()">关闭</button></div></div>
+    <script>
+        const $=id=>document.getElementById(id),on=(el,evt,fn)=>el.addEventListener(evt,fn);
+        let cmds=[];
+        function toggleCard(id){const c=$(id),b=c.querySelector('.card-body');if(c.classList.contains('collapsed')){c.classList.remove('collapsed');b.style.maxHeight=b.scrollHeight+'px';setTimeout(()=>b.style.maxHeight='none',350)}else{b.style.maxHeight=b.scrollHeight+'px';requestAnimationFrame(()=>{b.style.maxHeight='0';c.classList.add('collapsed')})}}
+        document.querySelectorAll('.card-body').forEach(b=>b.style.maxHeight='none');
+        on($('supplyOn'),'change',()=>{$('supplyWrap').classList.toggle('hidden',!$('supplyOn').checked)});
+        function addRipple(b,e){const r=b.getBoundingClientRect(),rp=document.createElement('span');rp.className='ripple';const s=Math.max(r.width,r.height);rp.style.width=rp.style.height=s+'px';rp.style.left=(e.clientX-r.left-s/2)+'px';rp.style.top=(e.clientY-r.top-s/2)+'px';b.appendChild(rp);setTimeout(()=>rp.remove(),550)}
+        function showDonate(){$('modal').classList.add('show')}function hideDonate(){$('modal').classList.remove('show')}
+
+        // 递推射线段（facing entity 递推链）
+        const RAY='anchored eyes facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^1 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^2 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^4 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^8 positioned ^ ^ ^16 if entity @e[tag=%T%,type=xp_orb,r=16] positioned ^ ^ ^-16 if entity @e[tag=%T%,type=xp_orb,r=16]';
+        function rs(t){return RAY.replace(/%T%/g,t)}
+
+        // 生成指令
+        function gen(btn,e){
+            if(btn&&e)addRipple(btn,e);
+            const t=$('tag').value||'枪',dmg=parseInt($('dmg').value)||20,dist=parseInt($('dist').value)||32,
+                  mag=parseInt($('magSize').value)||30,total=parseInt($('totalAmmo').value)||999,
+                  rate=parseInt($('fireRate').value)||0,reload=parseInt($('reloadTime').value)||40,
+                  burst=parseInt($('burstCount').value)||1,
+                  ptc=$('particle').value,sndS=$('sndShoot').value||'mob.zombie.woodbreak',
+                  sndR=$('sndReload').value||'armor.equip_leather',
+                  wall=$('wallCheck').checked,ptcOn=$('particleOn').checked,
+                  sndOn=$('soundOn').checked,shakeOn=$('shakeOn').checked,
+                  shakeVal=(parseInt($('shake')?.value||5)*0.05).toFixed(2),
+                  muzzleOn=$('muzzleOn').checked,spreadOn=$('spreadOn').checked,
+                  ammoOn=$('ammoOn').checked,reloadOn=$('ammoOn')&&$('reloadOn').checked,
+                  supplyOn=$('ammoOn')&&$('supplyOn').checked,
+                  supplyItem=$('supplyItem').value||'white_candle',
+                  supplyAmt=parseInt($('supplyAmount').value)||100,
+                  supplyMax=parseInt($('supplyMax').value)||999,
+                  hudOn=$('hudOn').checked;
+            cmds=[];
+            const add=(tp,l,c,d,s)=>cmds.push({t:tp,l,c,d,s:!!s});
+            const r=rs(t);
+
+            // ══════════════════════════════════════════
+            //  设置命令（聊天框执行一次）
+            // ══════════════════════════════════════════
+            add('setup','创建弹药计分板',`/scoreboard objectives add ${t}_子弹 dummy "子弹"`,null,true);
+            add('setup','创建最大弹药计分板',`/scoreboard objectives add ${t}_max dummy "最大弹药"`,null,true);
+            if(ammoOn) add('setup','创建总弹药计分板',`/scoreboard objectives add ${t}_总子弹 dummy "总子弹"`,null,true);
+            add('setup','创建间隔计分板',`/scoreboard objectives add ${t}_间隔 dummy "间隔"`,null,true);
+            if(burst>1) add('setup','创建连射计分板',`/scoreboard objectives add ${t}_连射 dummy "连射"`,null,true);
+            if(reloadOn){add('setup','创建换弹时间计分板',`/scoreboard objectives add ${t}_换弹时间 dummy "换弹时间"`,null,true);add('setup','创建设置换弹时间计分板',`/scoreboard objectives add ${t}_设置换弹时间 dummy "设置换弹时间"`,null,true)}
+            add('setup','创建枪械计分板',`/scoreboard objectives add ${t}_枪 dummy "${t}"`,null,true);
+            if(spreadOn) add('setup','创建散射计分板',`/scoreboard objectives add ${t}_随机 dummy "随机"`,null,true);
+            if(spreadOn) add('setup','创建y散射计分板',`/scoreboard objectives add ${t}_y随机 dummy "y随机"`,null,true);
+
+            add('setup','初始化弹药上限',`/scoreboard players set @a ${t}_max ${mag}`,null,true);
+            add('setup','初始化弹匣弹药',`/scoreboard players set @a ${t}_子弹 ${mag}`,null,true);
+            if(ammoOn) add('setup','初始化备弹总量',`/scoreboard players set @a ${t}_总子弹 ${total}`,null,true);
+            add('setup','初始化间隔',`/scoreboard players set @a ${t}_间隔 0`,null,true);
+            if(burst>1) add('setup','初始化连射',`/scoreboard players set @a ${t}_连射 ${burst}`,null,true);
+            if(reloadOn) add('setup','初始化换弹时间设置',`/scoreboard players set @a ${t}_设置换弹时间 ${reload}`,null,true);
+
+            // ══════════════════════════════════════════
+            //  换弹&前置（循环 · 延迟4 · 保持开启）
+            // ══════════════════════════════════════════
+            if(reloadOn){
+                add('repeat','换弹清除title',`execute as @a[scores={${t}_换弹时间=1..}] at @s run titleraw @s title {"rawtext":[{"text":"§r"}]}`,'清除title残留','delay');
+                add('repeat','换弹进度显示',`execute as @a[scores={${t}_换弹时间=1..}] at @s run titleraw @s subtitle {"rawtext":[{"text":"\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n§fＲｅｌｏａｄｉｎｇ §7＞＞§f "},{"score":{"name":"@s","objective":"${t}_换弹时间"}}]}`,'显示换弹倒计时','delay');
+                add('repeat','换弹时间递减',`scoreboard players remove @a[scores={${t}_换弹时间=1..}] ${t}_换弹时间 1`,'每tick递减','delay');
+                // 换弹完成
+                add('repeat','换弹完成补满',`execute as @a[scores={${t}_换弹时间=1,${t}_子弹=0,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 >= @s ${t}_max run scoreboard players operation @s ${t}_子弹 = @s ${t}_max`,'备弹>=弹匣时补满','delay');
+                add('repeat','换弹完成扣除备弹',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 >= @s ${t}_max run scoreboard players operation @s ${t}_总子弹 -= @s ${t}_max`,'扣除弹匣容量','delay');
+                add('repeat','换弹完成补剩余',`execute as @a[scores={${t}_换弹时间=1,${t}_子弹=0,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 < @s ${t}_max run scoreboard players operation @s ${t}_子弹 = @s ${t}_总子弹`,'备弹不足时补剩余','delay');
+                add('repeat','换弹完成清备弹',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 < @s ${t}_max run scoreboard players remove @s ${t}_总子弹 0`,'备弹清零(通过operation)','delay');
+                // 用更可靠的方式清零
+                add('repeat','换弹完成音效',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=0..}] at @s run playsound ${sndR} @s ~~~ 1 1.2`,'换弹完成音效','delay');
+                add('repeat','设置title时间',`title @a times 0 5 0`,'设置title显示5tick','delay');
+            }
+
+            // ══════════════════════════════════════════
+            //  前置初始化（循环 · 无条件 · 保持开启）
+            // ══════════════════════════════════════════
+            add('repeat','初始化实体计分板',`scoreboard players add @e ${t}_枪 0`,'确保实体有计分板值');
+            add('repeat','初始化玩家间隔',`scoreboard players add @a ${t}_间隔 0`,'确保玩家有间隔值');
+            if(reloadOn) add('repeat','初始化换弹计分板',`scoreboard players add @a ${t}_换弹时间 0`,'确保玩家有换弹时间值');
+            add('repeat','间隔递减',`scoreboard players remove @a[scores={${t}_间隔=1..}] ${t}_间隔 1`,'每tick减少射击间隔');
+
+            // 空弹杀鱼钩
+            if(ammoOn) add('repeat','空弹杀鱼钩',`execute as @a[scores={${t}_子弹=..0}] at @s run kill @e[r=3,type=fishing_hook]`,'弹药为0时杀死鱼钩');
+
+            // 弹药补给
+            if(supplyOn){
+                add('repeat','抬头补给备弹',`scoreboard players add @a[hasitem={item=${supplyItem},location=slot.weapon.mainhand},rxm=88] ${t}_总子弹 ${supplyAmt}`,`抬头+${supplyItem}→备弹+${supplyAmt}`);
+                add('repeat','补给上限限制',`execute as @a[scores={${t}_总子弹=${supplyMax+1}..}] run scoreboard players set @s ${t}_总子弹 ${supplyMax}`,`备弹上限${supplyMax}`);
+                add('repeat','消耗补给物品',`clear @a[hasitem={item=${supplyItem},location=slot.weapon.mainhand},rxm=88] ${supplyItem} 0 1`,'消耗1个补给物品');
+            }
+
+            // ══════════════════════════════════════════
+            //  主体射击（循环 · 保持开启）
+            // ══════════════════════════════════════════
+            add('repeat','标记鱼钩',`execute at @e[c=1,type=fishing_hook] as @e[r=3,c=2] at @s unless entity @s[type=!fishing_hook,type=!player] run tag @s add ${t}`,'检测鱼钩并标记');
+
+            // 空弹自动换弹
+            if(ammoOn&&reloadOn){
+                add('repeat','空弹触发换弹',`execute as @e[type=fishing_hook,tag=${t}] at @s as @p[r=2.5,scores={${t}_子弹=0,${t}_总子弹=1..,${t}_换弹时间=0}] at @s run scoreboard players operation @s ${t}_换弹时间 = @s ${t}_设置换弹时间`,'弹匣空+有备弹+未换弹→开始换弹');
+            }
+
+            // 间隔检查
+            add('repeat','射击间隔检查',`execute as @e[tag=${t},type=fishing_hook] at @s unless entity @p[tag=${t},scores={${t}_间隔=0}] run tag @s remove ${t}`,'射击间隔未完则移除标签');
+
+            // 弹药检查+扣除
+            if(ammoOn){
+                add('repeat','弹药检查',`execute as @e[tag=${t},type=fishing_hook] at @s unless entity @p[tag=${t},scores={${t}_子弹=1..}] run tag @s remove ${t}`,'弹药不足则移除标签');
+                // 连射限制
+                if(burst>1){
+                    add('repeat','连射数检查',`execute as @e[tag=${t},type=fishing_hook] at @s as @p[tag=${t}] at @s unless score @s ${t}_子弹 >= @s ${t}_连射 run tag @e[type=fishing_hook,tag=${t},r=3] remove ${t}`,'子弹数不够连射则移除标签');
+                    add('repeat','扣除连射弹药',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players operation @s ${t}_子弹 -= @s ${t}_连射`,'连射扣除对应弹药');
+                }else{
+                    add('repeat','扣除弹药',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players remove @s ${t}_子弹 1`,'射击消耗1发弹药');
+                }
+            }
+
+            // 设置射击间隔
+            if(rate>0) add('repeat','设置射击间隔',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players set @s ${t}_间隔 ${rate}`,`设置${rate}tick射击间隔`);
+
+            // 传送鱼钩到射程
+            add('repeat','传送鱼钩',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run tp @s ^ ^ ^${dist} facing @p[tag=${t}]`,`将鱼钩瞬移到玩家前方${dist}格`);
+
+            // 生成弹丸(xp_orb)
+            add('repeat','生成弹丸',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] positioned ^ ^1.5 ^ run summon xp_orb ^ ^ ^0.2`,'在玩家眼部生成弹丸实体');
+
+            // 设置弹丸枪械值
+            add('repeat','设置弹丸计分板',`execute as @e[type=xp_orb,scores={${t}_枪=0}] at @s run scoreboard players set @s ${t}_枪 1`,'标记弹丸实体');
+
+            // 散射偏移
+            if(spreadOn){
+                add('chain','设置随机值',`scoreboard players random @e[type=xp_orb,scores={${t}_枪=1}] ${t}_随机 1 6`,'1-6对应6档偏移');
+                add('chain','设置y随机值',`scoreboard players random @e[type=xp_orb,scores={${t}_枪=1}] ${t}_y随机 1 6`,'1-6对应6档偏移');
+                // x偏移
+                add('chain','x偏移+0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=1}] at @s run tp @s ~0.7~~`);add('chain','x偏移-0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=2}] at @s run tp @s ~-0.7~~`);add('chain','x偏移+1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=3}] at @s run tp @s ~1.7~~`);add('chain','x偏移-1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=4}] at @s run tp @s ~-1.7~~`);add('chain','x偏移+4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=5}] at @s run tp @s ~4~~`);add('chain','x偏移-4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=6}] at @s run tp @s ~-4~~`);
+                // y偏移
+                add('chain','y偏移+0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=1}] at @s run tp @s ~~0.7~`);add('chain','y偏移-0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=2}] at @s run tp @s ~~-0.7~`);add('chain','y偏移+1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=3}] at @s run tp @s ~~1.7~`);add('chain','y偏移-1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=4}] at @s run tp @s ~~-1.7~`);add('chain','y偏移+4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=5}] at @s run tp @s ~~4~`);add('chain','y偏移-4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=6}] at @s run tp @s ~~-4~`);
+            }
+
+            // 枪口粒子
+            if(muzzleOn) add('repeat','枪口粒子',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] positioned ^ ^1.5 ^ run particle minecraft:blue_flame_particle ^ ^ ^0.2`,'枪口闪光粒子效果');
+
+            // 将玩家标签传给弹丸
+            add('repeat','标记弹丸标签',`execute as @e[type=xp_orb,scores={${t}_枪=1}] at @s as @p[tag=${t},r=64] run tag @s add ${t}`,'将玩家武器标签传给弹丸');
+
+            // 递推射线 - 穿墙检测
+            if(wallCheck) add('repeat','穿墙检测',`execute at @a[tag=${t}] ${r} unless block ~~1.4~ air run tp @e[tag=${t},type=xp_orb] ~ ~ ~`,'遇非空气方块弹丸传至碰撞点');
+
+            // 递推射线 - 粒子轨迹
+            if(ptcOn&&ptc) add('repeat','粒子轨迹',`execute at @a[tag=${t}] ${r} run particle ${ptc}`,'沿递推路径生成粒子');
+
+            // 递推射线 - 伤害判定
+            add('repeat','伤害判定',`execute at @a[tag=${t}] ${r} run damage @e[tag=!${t},r=1,y=~-1] ${dmg} entity_attack entity @a[tag=${t}]`,`对弹丸附近1格内非标签实体造成${dmg}伤害`);
+
+            // 射击音效
+            if(sndOn) add('repeat','射击音效',`execute at @e[tag=${t},type=fishing_hook] run playsound ${sndS} @a[r=48] ~~~ 1 1 0`,'播放射击音效');
+
+            // 屏幕抖动
+            if(shakeOn) add('repeat','屏幕抖动',`execute at @e[tag=${t},type=fishing_hook] at @p[tag=${t}] run camerashake add @s ${shakeVal} 0.1 positional`,'射击时相机抖动');
+
+            // 清除鱼钩
+            add('repeat','清除鱼钩',`kill @e[type=fishing_hook,tag=${t}]`,'射击完成后移除鱼钩');
+
+            // 清除弹丸
+            add('repeat','清除弹丸',`execute as @e[tag=${t},type=xp_orb,scores={${t}_枪=1}] at @s run kill @s`,'清除弹丸实体');
+
+            // 清除标签
+            add('repeat','清除标签',`tag @a[tag=${t}] remove ${t}`,'移除玩家武器标签');
+
+            // ══════════════════════════════════════════
+            //  HUD显示（循环 · 无条件 · 保持开启）
+            // ══════════════════════════════════════════
+            if(hudOn){
+                let hudJson;
+                if(ammoOn){
+                    hudJson=`{"rawtext":[{"text":"§b▏ §f${t} §7-§e "},{"score":{"name":"@s","objective":"${t}_子弹"}},{"text":"§f/§7${mag}"},{"text":" §8| §f备弹 §e"},{"score":{"name":"@s","objective":"${t}_总子弹"}},{"text":"\\n§b▏ §f射击冷却 §e"},{"score":{"name":"@s","objective":"${t}_间隔"}},{"text":"§ft"}]}`;
+                }else{
+                    hudJson=`{"rawtext":[{"text":"§b▏ §f射击冷却 §e"},{"score":{"name":"@s","objective":"${t}_间隔"}},{"text":"§ft"}]}`;
+                }
+                add('repeat','HUD显示',`execute as @a[hasitem={item=fishing_rod,location=slot.weapon.mainhand}] run titleraw @s actionbar ${hudJson}`,'持鱼竿时显示弹药和冷却');
+            }
+
+            render();
+        }
+
+        function render(){
+            const c=$('out');
+            if(!cmds.length){c.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg><p>配置参数后点击生成</p></div>';$('cmdCount').textContent='';return}
+            const counter=$('cmdCount');counter.textContent=cmds.length+' 条';counter.classList.add('fresh');setTimeout(()=>counter.classList.remove('fresh'),1200);
+            c.innerHTML=cmds.map((cmd,i)=>{
+                const cls=cmd.s?'sec':cmd.t==='chain'?'chain':cmd.t==='repeat'?'repeat':'setup';
+                const badge=cmd.t==='chain'?'b-chain':cmd.t==='repeat'?'b-repeat':'b-setup';
+                const name=cmd.t==='chain'?'连锁':cmd.t==='repeat'?'循环':'设置';
+                const typeTag=cmd.s?'<span class="cmd-type delay">延迟4</span>':'';
+                return `<div class="cmd-item ${cls}" style="animation-delay:${Math.min(i*20,600)}ms">
+                    <div class="cmd-header"><div class="cmd-meta"><span class="badge ${badge}">${name}</span>${typeTag}<span class="cmd-name">${cmd.l}</span></div>
+                    <button class="cmd-copy" onclick="copyOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 复制</button></div>
+                    <div class="cmd-code">${cmd.c.replace(/</g,'&lt;')}</div>
+                    ${cmd.d?`<div class="cmd-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> ${cmd.d}</div>`:''}
+                </div>`}).join('');
+            requestAnimationFrame(()=>{c.querySelectorAll('.cmd-item').forEach(el=>el.classList.add('show'))});
+        }
+        function copyOne(i){navigator.clipboard.writeText(cmds[i].c).then(()=>toast('已复制'))}
+        function copyAll(btn,e){if(btn&&e)addRipple(btn,e);if(!cmds.length)return toast('暂无指令');const txt=cmds.map(c=>c.s?`\n# ══ ${c.l} ══\n${c.c}`:`# ${c.l}\n${c.c}`).join('\n\n');navigator.clipboard.writeText(txt).then(()=>toast('全部已复制'))}
+        function toast(msg){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ${msg}`;document.body.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),250)},1800)}
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鱼竿枪指令生成器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        :root{--bg:#f5f5f5;--surface:#fff;--surface-2:#fafafa;--surface-3:#f0f0f0;--border:#e8e8e8;--border-hover:#d5d5d5;--text-1:#1a1a1a;--text-2:#555;--text-3:#888;--text-4:#bbb;--accent:#1a1a1a;--accent-light:rgba(26,26,26,0.06);--green:#22863a;--green-bg:rgba(34,134,58,0.08);--purple:#6f42c1;--purple-bg:rgba(111,66,193,0.08);--amber:#b38600;--amber-bg:rgba(179,134,0,0.08);--red:#cf222e;--red-bg:rgba(207,34,46,0.06);--radius:10px;--radius-sm:6px}
+        body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-1);line-height:1.6;min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
+        .mono{font-family:'JetBrains Mono',monospace}
+        .header{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:52px;animation:headerIn .5s ease-out}
+        @keyframes headerIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+        .container{max-width:1160px;margin:0 auto;padding:0 24px}
+        .header-inner{height:100%;display:flex;align-items:center;justify-content:space-between}
+        .logo{display:flex;align-items:center;gap:10px}
+        .logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;animation:dotPulse 2.5s ease-in-out infinite}
+        @keyframes dotPulse{0%,100%{box-shadow:0 0 0 0 rgba(26,26,26,0.2)}50%{box-shadow:0 0 0 5px rgba(26,26,26,0)}}
+        .logo-text{font-size:16px;font-weight:700;color:var(--text-1);letter-spacing:-0.02em}
+        .logo-sep{color:var(--border);margin:0 1px}
+        .logo-sub{font-size:14px;font-weight:400;color:var(--text-3)}
+        .version{font-size:11px;color:var(--text-3);background:var(--surface-2);padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-weight:500}
+        .main{padding-top:72px;padding-bottom:48px}
+        .layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+        @media(max-width:860px){.layout{grid-template-columns:1fr}}
+        .panel{display:flex;flex-direction:column;gap:12px}
+        .card{background:var(--surface);border-radius:var(--radius);padding:20px 22px;border:1px solid var(--border);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out forwards}
+        .card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.1s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.2s}
+        @keyframes cardIn{to{opacity:1;transform:translateY(0)}}
+        .card-head{display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;user-select:none;-webkit-user-select:none}
+        .card-head svg{width:16px;height:16px;color:var(--text-3);stroke-width:1.8;flex-shrink:0}
+        .card-title{font-size:12px;font-weight:700;color:var(--text-1);text-transform:uppercase;letter-spacing:.07em}
+        .card-chevron{margin-left:auto;color:var(--text-4);transition:transform .3s}
+        .card-chevron svg{width:14px;height:14px}
+        .card.collapsed .card-chevron{transform:rotate(-90deg)}
+        .card-body{display:grid;gap:14px;overflow:hidden;transition:max-height .35s ease,opacity .25s ease}
+        .card.collapsed .card-body{max-height:0!important;opacity:0;gap:0}
+        label.field{display:block}
+        .field-label{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-3);margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+        .field-label svg{width:12px;height:12px;color:var(--text-4);stroke-width:1.8}
+        .field-hint{color:var(--text-4);font-weight:400;text-transform:none;letter-spacing:0}
+        input[type="text"],input[type="number"]{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;transition:border-color .2s,box-shadow .2s;background:var(--surface-2);color:var(--text-1)}
+        input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-light)}
+        input.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+        .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+        .check-item{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;transition:border-color .2s,background .2s,transform .15s;gap:8px}
+        .check-item:hover{border-color:var(--border-hover);background:var(--surface-3)}
+        .check-item:active{transform:scale(.985)}
+        .check-info{flex:1;min-width:0}
+        .check-label{font-size:12px;font-weight:500;color:var(--text-1)}
+        .check-desc{font-size:10px;color:var(--text-3);margin-top:1px}
+        input[type="checkbox"]{width:15px;height:15px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+        .btn-group{display:flex;gap:8px;margin-bottom:14px}
+        .btn{padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;border:none;position:relative;overflow:hidden}
+        .btn svg{width:15px;height:15px}
+        .btn-main{background:var(--accent);color:#fff;flex:1}
+        .btn-main:hover{background:#333;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+        .btn-main:active{transform:translateY(0);box-shadow:none}
+        .btn .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:rippleOut .55s ease-out;pointer-events:none}
+        @keyframes rippleOut{to{transform:scale(4);opacity:0}}
+        .btn-sec{background:var(--surface);color:var(--text-1);border:1px solid var(--border);flex:1}
+        .btn-sec:hover{border-color:var(--border-hover);background:var(--surface-2)}
+        .donate-strip{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out .25s forwards}
+        .donate-strip svg{width:16px;height:16px;color:var(--text-4);stroke-width:1.8;flex-shrink:0}
+        .donate-text{flex:1;font-size:12px;color:var(--text-3);line-height:1.4}
+        .donate-text strong{color:var(--text-2);font-weight:500}
+        .btn-donate{padding:5px 12px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:all .2s}
+        .btn-donate svg{width:11px;height:11px}
+        .btn-donate:hover{border-color:var(--border-hover);color:var(--text-1)}
+        .out-card{background:var(--surface);border-radius:var(--radius);padding:20px 22px;border:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:64px;max-height:calc(100vh - 88px);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out .12s forwards}
+        .out-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+        .out-title{font-size:12px;font-weight:700;color:var(--text-1);text-transform:uppercase;letter-spacing:.07em}
+        .out-count{font-size:11px;color:var(--text-4);font-family:'JetBrains Mono',monospace;transition:color .3s}
+        .out-count.fresh{color:var(--green)}
+        .out-sub{font-size:11px;color:var(--text-3);margin-bottom:12px}
+        .badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+        .badge{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:600;letter-spacing:.02em}
+        .b-chain{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,134,58,.15)}
+        .b-repeat{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(111,66,193,.15)}
+        .b-setup{background:var(--surface-3);color:var(--text-3);border:1px solid var(--border)}
+        .cmd-list{flex:1;overflow-y:auto;padding-right:4px}
+        .cmd-list::-webkit-scrollbar{width:4px}
+        .cmd-list::-webkit-scrollbar-track{background:transparent}
+        .cmd-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+        .cmd-item{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:5px;border-left:3px solid var(--amber);opacity:0;transform:translateY(8px);transition:border-color .2s,box-shadow .2s}
+        .cmd-item.show{animation:cmdIn .3s ease-out forwards}
+        @keyframes cmdIn{to{opacity:1;transform:translateY(0)}}
+        .cmd-item:hover{border-color:var(--border-hover);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+        .cmd-item.chain{border-left-color:var(--green)}
+        .cmd-item.repeat{border-left-color:var(--purple)}
+        .cmd-item.setup{border-left-color:var(--text-4)}
+        .cmd-item.sec{border-left-color:var(--red);margin-top:12px;background:var(--red-bg)}
+        .cmd-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+        .cmd-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+        .cmd-name{font-size:12px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .cmd-copy{font-size:10px;color:var(--text-3);background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:3px;font-weight:500;transition:all .2s}
+        .cmd-copy svg{width:11px;height:11px}
+        .cmd-copy:hover{background:var(--accent-light);border-color:var(--border-hover);color:var(--text-1)}
+        .cmd-code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg);padding:8px 10px;border-radius:4px;border:1px solid var(--border);word-break:break-all;line-height:1.65;color:var(--text-2)}
+        .cmd-note{font-size:10px;color:var(--text-3);margin-top:5px;display:flex;align-items:center;gap:3px}
+        .cmd-note svg{width:11px;height:11px;stroke-width:2}
+        .cmd-type{font-size:9px;font-weight:600;padding:1px 5px;border-radius:2px;background:var(--surface-3);color:var(--text-3);margin-left:4px;white-space:nowrap}
+        .cmd-type.delay{background:var(--amber-bg);color:var(--amber)}
+        .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:var(--text-4);gap:10px}
+        .empty svg{width:40px;height:40px;color:var(--border);stroke-width:1;animation:emptyFloat 3s ease-in-out infinite}
+        @keyframes emptyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        .empty p{font-size:13px}
+        .footer{border-top:1px solid var(--border);padding:16px 0;background:var(--surface)}
+        .footer-inner{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-3)}
+        @media(max-width:600px){.footer-inner{flex-direction:column;gap:4px;text-align:center}}
+        .modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+        .modal.show{display:flex}
+        .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+        .modal-box{position:relative;background:var(--surface);border-radius:12px;padding:28px;max-width:340px;width:100%;text-align:center;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,.1);animation:modalIn .3s cubic-bezier(.16,1,.3,1)}
+        @keyframes modalIn{from{transform:scale(.95) translateY(12px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+        .modal-icon{width:44px;height:44px;background:var(--surface-2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--text-3)}
+        .modal-icon svg{width:20px;height:20px;stroke-width:1.8}
+        .modal-title{font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:6px}
+        .modal-text{font-size:12px;color:var(--text-3);margin-bottom:18px;line-height:1.5}
+        .qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+        .qr-box{aspect-ratio:1;background:var(--surface-2);border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-4)}
+        .btn-close{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-weight:600;transition:background .2s}
+        .btn-close:hover{background:#333}
+        .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);color:var(--text-1);padding:10px 16px;border-radius:var(--radius-sm);font-size:12px;z-index:200;font-weight:500;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.08);display:flex;align-items:center;gap:7px;animation:toastIn .3s cubic-bezier(.16,1,.3,1)}
+        .toast svg{width:14px;height:14px;color:var(--green)}
+        .toast.out{animation:toastOut .25s ease-in forwards}
+        @keyframes toastIn{from{transform:translateY(12px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+        @keyframes toastOut{to{transform:translateY(6px) scale(.97);opacity:0}}
+        .hidden{display:none!important}
+        @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container header-inner">
+            <div class="logo"><span class="logo-dot"></span><span class="logo-text">鱼竿枪生成器</span><span class="logo-sep">/</span><span class="logo-sub">V2.0</span></div>
+            <span class="version">1.20+ Bedrock</span>
+        </div>
+    </header>
+    <main class="main">
+        <div class="container layout">
+            <div class="panel">
+                <!-- 基础设置 -->
+                <div class="card" id="c1">
+                    <div class="card-head" onclick="toggleCard('c1')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 17.66l-4.24 4.24M23 12h-6m-6 0H1m20.24 4.24l-4.24-4.24M6.34 6.34L2.1 2.1"/></svg>
+                        <span class="card-title">基础设置</span>
+                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row2">
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg> 武器标签</div><input type="text" id="tag" value="枪" class="mono" style="color:#1a73e8"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> 基础伤害</div><input type="number" id="dmg" value="20" min="1"></label>
+                        </div>
+                        <div class="row3">
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg> 射程</div><input type="number" id="dist" value="32" min="5" max="128"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 2v4M8 2v4M2 10h20"/></svg> 弹匣</div><input type="number" id="magSize" value="30" min="1"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> 备弹</div><input type="number" id="totalAmmo" value="999" min="1"></label>
+                        </div>
+                        <div class="row3">
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 射击间隔</div><input type="number" id="fireRate" value="0" min="0" max="60"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> 换弹时间</div><input type="number" id="reloadTime" value="40" min="1" max="200"></label>
+                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 连射数</div><input type="number" id="burstCount" value="1" min="1" max="10"></label>
+                        </div>
+                    </div>
+                </div>
+                <!-- 特效选项 -->
+                <div class="card" id="c2">
+                    <div class="card-head" onclick="toggleCard('c2')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <span class="card-title">特效选项</span>
+                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+                    </div>
+                    <div class="card-body">
+                        <label class="field"><div class="field-label">轨迹粒子</div><input type="text" id="particle" value="minecraft:balloon_gas_particle" class="mono"></label>
+                        <label class="field"><div class="field-label">射击音效</div><input type="text" id="sndShoot" value="mob.zombie.woodbreak" class="mono"></label>
+                        <label class="field"><div class="field-label">换弹音效</div><input type="text" id="sndReload" value="armor.equip_leather" class="mono"></label>
+                        <div class="check-grid">
+                            <label class="check-item"><div class="check-info"><div class="check-label">穿墙检测</div><div class="check-desc">遇方块停止</div></div><input type="checkbox" id="wallCheck" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">显示粒子</div><div class="check-desc">子弹飞行轨迹</div></div><input type="checkbox" id="particleOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">射击音效</div><div class="check-desc">开火时播放</div></div><input type="checkbox" id="soundOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">屏幕抖动</div><div class="check-desc">相机震动</div></div><input type="checkbox" id="shakeOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">枪口粒子</div><div class="check-desc">开火闪光效果</div></div><input type="checkbox" id="muzzleOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">散射偏移</div><div class="check-desc">随机弹道偏移</div></div><input type="checkbox" id="spreadOn"></label>
+                        </div>
+                    </div>
+                </div>
+                <!-- 弹药系统 -->
+                <div class="card" id="c3">
+                    <div class="card-head" onclick="toggleCard('c3')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                        <span class="card-title">弹药系统</span>
+                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="check-grid">
+                            <label class="check-item"><div class="check-info"><div class="check-label">弹药计数</div><div class="check-desc">弹匣+备弹</div></div><input type="checkbox" id="ammoOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">换弹系统</div><div class="check-desc">空弹自动换弹</div></div><input type="checkbox" id="reloadOn" checked></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">弹药补给</div><div class="check-desc">抬头+消耗物品</div></div><input type="checkbox" id="supplyOn"></label>
+                            <label class="check-item"><div class="check-info"><div class="check-label">HUD显示</div><div class="check-desc">弹匣/备弹/冷却</div></div><input type="checkbox" id="hudOn" checked></label>
+                        </div>
+                        <div id="supplyWrap" class="hidden" style="display:grid;gap:10px">
+                            <label class="field"><div class="field-label">补给物品ID</div><input type="text" id="supplyItem" value="white_candle" class="mono"></label>
+                            <div class="row2">
+                                <label class="field"><div class="field-label">补给弹药量</div><input type="number" id="supplyAmount" value="100" min="1"></label>
+                                <label class="field"><div class="field-label">补给最大上限</div><input type="number" id="supplyMax" value="999" min="1"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="donate-strip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    <span class="donate-text">免费开源工具，<strong>欢迎支持</strong></span>
+                    <button class="btn-donate" onclick="showDonate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> 赞赏</button>
+                </div>
+            </div>
+            <!-- 输出面板 -->
+            <div class="out-card">
+                <div class="btn-group">
+                    <button class="btn btn-main" onclick="gen(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg> 生成指令</button>
+                    <button class="btn btn-sec" onclick="copyAll(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 复制全部</button>
+                </div>
+                <div class="out-head"><span class="out-title">命令方块序列</span><span class="out-count" id="cmdCount"></span></div>
+                <div class="out-sub">未标注均为 循环 · 无条件 · 保持开启</div>
+                <div class="badges"><span class="badge b-repeat">循环</span><span class="badge b-chain">连锁</span><span class="badge b-setup">设置</span></div>
+                <div id="out" class="cmd-list"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg><p>配置参数后点击生成</p></div></div>
+            </div>
+        </div>
+    </main>
+    <footer class="footer"><div class="container footer-inner"><span>鱼竿枪生成器 · 基岩版无实体射线枪 V2.0</span><span>参考 木薯 NX鱼竿枪</span></div></footer>
+    <div id="modal" class="modal" onclick="if(event.target.classList.contains('modal-bg'))hideDonate()"><div class="modal-bg"></div><div class="modal-box"><div class="modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div><div class="modal-title">感谢支持</div><div class="modal-text">你的支持是我们持续更新的动力</div><div class="qr-grid"><div><div class="qr-box">微信赞赏码</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">微信</div></div><div><div class="qr-box">支付宝赞赏码</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">支付宝</div></div></div><button class="btn-close" onclick="hideDonate()">关闭</button></div></div>
+    <script>
+        const $=id=>document.getElementById(id),on=(el,evt,fn)=>el.addEventListener(evt,fn);
+        let cmds=[];
+        function toggleCard(id){const c=$(id),b=c.querySelector('.card-body');if(c.classList.contains('collapsed')){c.classList.remove('collapsed');b.style.maxHeight=b.scrollHeight+'px';setTimeout(()=>b.style.maxHeight='none',350)}else{b.style.maxHeight=b.scrollHeight+'px';requestAnimationFrame(()=>{b.style.maxHeight='0';c.classList.add('collapsed')})}}
+        document.querySelectorAll('.card-body').forEach(b=>b.style.maxHeight='none');
+        on($('supplyOn'),'change',()=>{$('supplyWrap').classList.toggle('hidden',!$('supplyOn').checked)});
+        function addRipple(b,e){const r=b.getBoundingClientRect(),rp=document.createElement('span');rp.className='ripple';const s=Math.max(r.width,r.height);rp.style.width=rp.style.height=s+'px';rp.style.left=(e.clientX-r.left-s/2)+'px';rp.style.top=(e.clientY-r.top-s/2)+'px';b.appendChild(rp);setTimeout(()=>rp.remove(),550)}
+        function showDonate(){$('modal').classList.add('show')}function hideDonate(){$('modal').classList.remove('show')}
+
+        // 递推射线段（facing entity 递推链）
+        const RAY='anchored eyes facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^1 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^2 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^4 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^8 positioned ^ ^ ^16 if entity @e[tag=%T%,type=xp_orb,r=16] positioned ^ ^ ^-16 if entity @e[tag=%T%,type=xp_orb,r=16]';
+        function rs(t){return RAY.replace(/%T%/g,t)}
+
+        // 生成指令
+        function gen(btn,e){
+            if(btn&&e)addRipple(btn,e);
+            const t=$('tag').value||'枪',dmg=parseInt($('dmg').value)||20,dist=parseInt($('dist').value)||32,
+                  mag=parseInt($('magSize').value)||30,total=parseInt($('totalAmmo').value)||999,
+                  rate=parseInt($('fireRate').value)||0,reload=parseInt($('reloadTime').value)||40,
+                  burst=parseInt($('burstCount').value)||1,
+                  ptc=$('particle').value,sndS=$('sndShoot').value||'mob.zombie.woodbreak',
+                  sndR=$('sndReload').value||'armor.equip_leather',
+                  wall=$('wallCheck').checked,ptcOn=$('particleOn').checked,
+                  sndOn=$('soundOn').checked,shakeOn=$('shakeOn').checked,
+                  shakeVal=(parseInt($('shake')?.value||5)*0.05).toFixed(2),
+                  muzzleOn=$('muzzleOn').checked,spreadOn=$('spreadOn').checked,
+                  ammoOn=$('ammoOn').checked,reloadOn=$('ammoOn')&&$('reloadOn').checked,
+                  supplyOn=$('ammoOn')&&$('supplyOn').checked,
+                  supplyItem=$('supplyItem').value||'white_candle',
+                  supplyAmt=parseInt($('supplyAmount').value)||100,
+                  supplyMax=parseInt($('supplyMax').value)||999,
+                  hudOn=$('hudOn').checked;
+            cmds=[];
+            const add=(tp,l,c,d,s)=>cmds.push({t:tp,l,c,d,s:!!s});
+            const r=rs(t);
+
+            // ══════════════════════════════════════════
+            //  设置命令（聊天框执行一次）
+            // ══════════════════════════════════════════
+            add('setup','创建弹药计分板',`/scoreboard objectives add ${t}_子弹 dummy "子弹"`,null,true);
+            add('setup','创建最大弹药计分板',`/scoreboard objectives add ${t}_max dummy "最大弹药"`,null,true);
+            if(ammoOn) add('setup','创建总弹药计分板',`/scoreboard objectives add ${t}_总子弹 dummy "总子弹"`,null,true);
+            add('setup','创建间隔计分板',`/scoreboard objectives add ${t}_间隔 dummy "间隔"`,null,true);
+            if(burst>1) add('setup','创建连射计分板',`/scoreboard objectives add ${t}_连射 dummy "连射"`,null,true);
+            if(reloadOn){add('setup','创建换弹时间计分板',`/scoreboard objectives add ${t}_换弹时间 dummy "换弹时间"`,null,true);add('setup','创建设置换弹时间计分板',`/scoreboard objectives add ${t}_设置换弹时间 dummy "设置换弹时间"`,null,true)}
+            add('setup','创建枪械计分板',`/scoreboard objectives add ${t}_枪 dummy "${t}"`,null,true);
+            if(spreadOn) add('setup','创建散射计分板',`/scoreboard objectives add ${t}_随机 dummy "随机"`,null,true);
+            if(spreadOn) add('setup','创建y散射计分板',`/scoreboard objectives add ${t}_y随机 dummy "y随机"`,null,true);
+
+            add('setup','初始化弹药上限',`/scoreboard players set @a ${t}_max ${mag}`,null,true);
+            add('setup','初始化弹匣弹药',`/scoreboard players set @a ${t}_子弹 ${mag}`,null,true);
+            if(ammoOn) add('setup','初始化备弹总量',`/scoreboard players set @a ${t}_总子弹 ${total}`,null,true);
+            add('setup','初始化间隔',`/scoreboard players set @a ${t}_间隔 0`,null,true);
+            if(burst>1) add('setup','初始化连射',`/scoreboard players set @a ${t}_连射 ${burst}`,null,true);
+            if(reloadOn) add('setup','初始化换弹时间设置',`/scoreboard players set @a ${t}_设置换弹时间 ${reload}`,null,true);
+
+            // ══════════════════════════════════════════
+            //  换弹&前置（循环 · 延迟4 · 保持开启）
+            // ══════════════════════════════════════════
+            if(reloadOn){
+                add('repeat','换弹清除title',`execute as @a[scores={${t}_换弹时间=1..}] at @s run titleraw @s title {"rawtext":[{"text":"§r"}]}`,'清除title残留','delay');
+                add('repeat','换弹进度显示',`execute as @a[scores={${t}_换弹时间=1..}] at @s run titleraw @s subtitle {"rawtext":[{"text":"\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n§fＲｅｌｏａｄｉｎｇ §7＞＞§f "},{"score":{"name":"@s","objective":"${t}_换弹时间"}}]}`,'显示换弹倒计时','delay');
+                add('repeat','换弹时间递减',`scoreboard players remove @a[scores={${t}_换弹时间=1..}] ${t}_换弹时间 1`,'每tick递减','delay');
+                // 换弹完成
+                add('repeat','换弹完成补满',`execute as @a[scores={${t}_换弹时间=1,${t}_子弹=0,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 >= @s ${t}_max run scoreboard players operation @s ${t}_子弹 = @s ${t}_max`,'备弹>=弹匣时补满','delay');
+                add('repeat','换弹完成扣除备弹',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 >= @s ${t}_max run scoreboard players operation @s ${t}_总子弹 -= @s ${t}_max`,'扣除弹匣容量','delay');
+                add('repeat','换弹完成补剩余',`execute as @a[scores={${t}_换弹时间=1,${t}_子弹=0,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 < @s ${t}_max run scoreboard players operation @s ${t}_子弹 = @s ${t}_总子弹`,'备弹不足时补剩余','delay');
+                add('repeat','换弹完成清备弹',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 < @s ${t}_max run scoreboard players remove @s ${t}_总子弹 0`,'备弹清零(通过operation)','delay');
+                // 用更可靠的方式清零
+                add('repeat','换弹完成音效',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=0..}] at @s run playsound ${sndR} @s ~~~ 1 1.2`,'换弹完成音效','delay');
+                add('repeat','设置title时间',`title @a times 0 5 0`,'设置title显示5tick','delay');
+            }
+
+            // ══════════════════════════════════════════
+            //  前置初始化（循环 · 无条件 · 保持开启）
+            // ══════════════════════════════════════════
+            add('repeat','初始化实体计分板',`scoreboard players add @e ${t}_枪 0`,'确保实体有计分板值');
+            add('repeat','初始化玩家间隔',`scoreboard players add @a ${t}_间隔 0`,'确保玩家有间隔值');
+            if(reloadOn) add('repeat','初始化换弹计分板',`scoreboard players add @a ${t}_换弹时间 0`,'确保玩家有换弹时间值');
+            add('repeat','间隔递减',`scoreboard players remove @a[scores={${t}_间隔=1..}] ${t}_间隔 1`,'每tick减少射击间隔');
+
+            // 空弹杀鱼钩
+            if(ammoOn) add('repeat','空弹杀鱼钩',`execute as @a[scores={${t}_子弹=..0}] at @s run kill @e[r=3,type=fishing_hook]`,'弹药为0时杀死鱼钩');
+
+            // 弹药补给
+            if(supplyOn){
+                add('repeat','抬头补给备弹',`scoreboard players add @a[hasitem={item=${supplyItem},location=slot.weapon.mainhand},rxm=88] ${t}_总子弹 ${supplyAmt}`,`抬头+${supplyItem}→备弹+${supplyAmt}`);
+                add('repeat','补给上限限制',`execute as @a[scores={${t}_总子弹=${supplyMax+1}..}] run scoreboard players set @s ${t}_总子弹 ${supplyMax}`,`备弹上限${supplyMax}`);
+                add('repeat','消耗补给物品',`clear @a[hasitem={item=${supplyItem},location=slot.weapon.mainhand},rxm=88] ${supplyItem} 0 1`,'消耗1个补给物品');
+            }
+
+            // ══════════════════════════════════════════
+            //  主体射击（循环 · 保持开启）
+            // ══════════════════════════════════════════
+            add('repeat','标记鱼钩',`execute at @e[c=1,type=fishing_hook] as @e[r=3,c=2] at @s unless entity @s[type=!fishing_hook,type=!player] run tag @s add ${t}`,'检测鱼钩并标记');
+
+            // 空弹自动换弹
+            if(ammoOn&&reloadOn){
+                add('repeat','空弹触发换弹',`execute as @e[type=fishing_hook,tag=${t}] at @s as @p[r=2.5,scores={${t}_子弹=0,${t}_总子弹=1..,${t}_换弹时间=0}] at @s run scoreboard players operation @s ${t}_换弹时间 = @s ${t}_设置换弹时间`,'弹匣空+有备弹+未换弹→开始换弹');
+            }
+
+            // 间隔检查
+            add('repeat','射击间隔检查',`execute as @e[tag=${t},type=fishing_hook] at @s unless entity @p[tag=${t},scores={${t}_间隔=0}] run tag @s remove ${t}`,'射击间隔未完则移除标签');
+
+            // 弹药检查+扣除
+            if(ammoOn){
+                add('repeat','弹药检查',`execute as @e[tag=${t},type=fishing_hook] at @s unless entity @p[tag=${t},scores={${t}_子弹=1..}] run tag @s remove ${t}`,'弹药不足则移除标签');
+                // 连射限制
+                if(burst>1){
+                    add('repeat','连射数检查',`execute as @e[tag=${t},type=fishing_hook] at @s as @p[tag=${t}] at @s unless score @s ${t}_子弹 >= @s ${t}_连射 run tag @e[type=fishing_hook,tag=${t},r=3] remove ${t}`,'子弹数不够连射则移除标签');
+                    add('repeat','扣除连射弹药',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players operation @s ${t}_子弹 -= @s ${t}_连射`,'连射扣除对应弹药');
+                }else{
+                    add('repeat','扣除弹药',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players remove @s ${t}_子弹 1`,'射击消耗1发弹药');
+                }
+            }
+
+            // 设置射击间隔
+            if(rate>0) add('repeat','设置射击间隔',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players set @s ${t}_间隔 ${rate}`,`设置${rate}tick射击间隔`);
+
+            // 传送鱼钩到射程
+            add('repeat','传送鱼钩',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run tp @s ^ ^ ^${dist} facing @p[tag=${t}]`,`将鱼钩瞬移到玩家前方${dist}格`);
+
+            // 生成弹丸(xp_orb)
+            add('repeat','生成弹丸',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] positioned ^ ^1.5 ^ run summon xp_orb ^ ^ ^0.2`,'在玩家眼部生成弹丸实体');
+
+            // 设置弹丸枪械值
+            add('repeat','设置弹丸计分板',`execute as @e[type=xp_orb,scores={${t}_枪=0}] at @s run scoreboard players set @s ${t}_枪 1`,'标记弹丸实体');
+
+            // 散射偏移
+            if(spreadOn){
+                add('chain','设置随机值',`scoreboard players random @e[type=xp_orb,scores={${t}_枪=1}] ${t}_随机 1 6`,'1-6对应6档偏移');
+                add('chain','设置y随机值',`scoreboard players random @e[type=xp_orb,scores={${t}_枪=1}] ${t}_y随机 1 6`,'1-6对应6档偏移');
+                // x偏移
+                add('chain','x偏移+0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=1}] at @s run tp @s ~0.7~~`);add('chain','x偏移-0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=2}] at @s run tp @s ~-0.7~~`);add('chain','x偏移+1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=3}] at @s run tp @s ~1.7~~`);add('chain','x偏移-1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=4}] at @s run tp @s ~-1.7~~`);add('chain','x偏移+4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=5}] at @s run tp @s ~4~~`);add('chain','x偏移-4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=6}] at @s run tp @s ~-4~~`);
+                // y偏移
+                add('chain','y偏移+0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=1}] at @s run tp @s ~~0.7~`);add('chain','y偏移-0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=2}] at @s run tp @s ~~-0.7~`);add('chain','y偏移+1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=3}] at @s run tp @s ~~1.7~`);add('chain','y偏移-1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=4}] at @s run tp @s ~~-1.7~`);add('chain','y偏移+4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=5}] at @s run tp @s ~~4~`);add('chain','y偏移-4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=6}] at @s run tp @s ~~-4~`);
+            }
+
+            // 枪口粒子
+            if(muzzleOn) add('repeat','枪口粒子',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] positioned ^ ^1.5 ^ run particle minecraft:blue_flame_particle ^ ^ ^0.2`,'枪口闪光粒子效果');
+
+            // 将玩家标签传给弹丸
+            add('repeat','标记弹丸标签',`execute as @e[type=xp_orb,scores={${t}_枪=1}] at @s as @p[tag=${t},r=64] run tag @s add ${t}`,'将玩家武器标签传给弹丸');
+
+            // 递推射线 - 穿墙检测
+            if(wallCheck) add('repeat','穿墙检测',`execute at @a[tag=${t}] ${r} unless block ~~1.4~ air run tp @e[tag=${t},type=xp_orb] ~ ~ ~`,'遇非空气方块弹丸传至碰撞点');
+
+            // 递推射线 - 粒子轨迹
+            if(ptcOn&&ptc) add('repeat','粒子轨迹',`execute at @a[tag=${t}] ${r} run particle ${ptc}`,'沿递推路径生成粒子');
+
+            // 递推射线 - 伤害判定
+            add('repeat','伤害判定',`execute at @a[tag=${t}] ${r} run damage @e[tag=!${t},r=1,y=~-1] ${dmg} entity_attack entity @a[tag=${t}]`,`对弹丸附近1格内非标签实体造成${dmg}伤害`);
+
+            // 射击音效
+            if(sndOn) add('repeat','射击音效',`execute at @e[tag=${t},type=fishing_hook] run playsound ${sndS} @a[r=48] ~~~ 1 1 0`,'播放射击音效');
+
+            // 屏幕抖动
+            if(shakeOn) add('repeat','屏幕抖动',`execute at @e[tag=${t},type=fishing_hook] at @p[tag=${t}] run camerashake add @s ${shakeVal} 0.1 positional`,'射击时相机抖动');
+
+            // 清除鱼钩
+            add('repeat','清除鱼钩',`kill @e[type=fishing_hook,tag=${t}]`,'射击完成后移除鱼钩');
+
+            // 清除弹丸
+            add('repeat','清除弹丸',`execute as @e[tag=${t},type=xp_orb,scores={${t}_枪=1}] at @s run kill @s`,'清除弹丸实体');
+
+            // 清除标签
+            add('repeat','清除标签',`tag @a[tag=${t}] remove ${t}`,'移除玩家武器标签');
+
+            // ══════════════════════════════════════════
+            //  HUD显示（循环 · 无条件 · 保持开启）
+            // ══════════════════════════════════════════
+            if(hudOn){
+                let hudJson;
+                if(ammoOn){
+                    hudJson=`{"rawtext":[{"text":"§b▏ §f${t} §7-§e "},{"score":{"name":"@s","objective":"${t}_子弹"}},{"text":"§f/§7${mag}"},{"text":" §8| §f备弹 §e"},{"score":{"name":"@s","objective":"${t}_总子弹"}},{"text":"\\n§b▏ §f射击冷却 §e"},{"score":{"name":"@s","objective":"${t}_间隔"}},{"text":"§ft"}]}`;
+                }else{
+                    hudJson=`{"rawtext":[{"text":"§b▏ §f射击冷却 §e"},{"score":{"name":"@s","objective":"${t}_间隔"}},{"text":"§ft"}]}`;
+                }
+                add('repeat','HUD显示',`execute as @a[hasitem={item=fishing_rod,location=slot.weapon.mainhand}] run titleraw @s actionbar ${hudJson}`,'持鱼竿时显示弹药和冷却');
+            }
+
+            render();
+        }
+
+        function render(){
+            const c=$('out');
+            if(!cmds.length){c.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg><p>配置参数后点击生成</p></div>';$('cmdCount').textContent='';return}
+            const counter=$('cmdCount');counter.textContent=cmds.length+' 条';counter.classList.add('fresh');setTimeout(()=>counter.classList.remove('fresh'),1200);
+            c.innerHTML=cmds.map((cmd,i)=>{
+                const cls=cmd.s?'sec':cmd.t==='chain'?'chain':cmd.t==='repeat'?'repeat':'setup';
+                const badge=cmd.t==='chain'?'b-chain':cmd.t==='repeat'?'b-repeat':'b-setup';
+                const name=cmd.t==='chain'?'连锁':cmd.t==='repeat'?'循环':'设置';
+                const typeTag=cmd.s?'<span class="cmd-type delay">延迟4</span>':'';
+                return `<div class="cmd-item ${cls}" style="animation-delay:${Math.min(i*20,600)}ms">
+                    <div class="cmd-header"><div class="cmd-meta"><span class="badge ${badge}">${name}</span>${typeTag}<span class="cmd-name">${cmd.l}</span></div>
+                    <button class="cmd-copy" onclick="copyOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 复制</button></div>
+                    <div class="cmd-code">${cmd.c.replace(/</g,'&lt;')}</div>
+                    ${cmd.d?`<div class="cmd-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> ${cmd.d}</div>`:''}
+                </div>`}).join('');
+            requestAnimationFrame(()=>{c.querySelectorAll('.cmd-item').forEach(el=>el.classList.add('show'))});
+        }
+        function copyOne(i){navigator.clipboard.writeText(cmds[i].c).then(()=>toast('已复制'))}
+        function copyAll(btn,e){if(btn&&e)addRipple(btn,e);if(!cmds.length)return toast('暂无指令');const txt=cmds.map(c=>c.s?`\n# ══ ${c.l} ══\n${c.c}`:`# ${c.l}\n${c.c}`).join('\n\n');navigator.clipboard.writeText(txt).then(()=>toast('全部已复制'))}
+        function toast(msg){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ${msg}`;document.body.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),250)},1800)}
+    </script>
+</body>
+</html>

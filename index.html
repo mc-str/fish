@@ -1,443 +1,212 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鱼竿枪指令生成器</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        *{box-sizing:border-box;margin:0;padding:0}
-        :root{--bg:#f5f5f5;--surface:#fff;--surface-2:#fafafa;--surface-3:#f0f0f0;--border:#e8e8e8;--border-hover:#d5d5d5;--text-1:#1a1a1a;--text-2:#555;--text-3:#888;--text-4:#bbb;--accent:#1a1a1a;--accent-light:rgba(26,26,26,0.06);--green:#22863a;--green-bg:rgba(34,134,58,0.08);--purple:#6f42c1;--purple-bg:rgba(111,66,193,0.08);--amber:#b38600;--amber-bg:rgba(179,134,0,0.08);--red:#cf222e;--red-bg:rgba(207,34,46,0.06);--radius:10px;--radius-sm:6px}
-        body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-1);line-height:1.6;min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
-        .mono{font-family:'JetBrains Mono',monospace}
-        .header{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:52px;animation:headerIn .5s ease-out}
-        @keyframes headerIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
-        .container{max-width:1160px;margin:0 auto;padding:0 24px}
-        .header-inner{height:100%;display:flex;align-items:center;justify-content:space-between}
-        .logo{display:flex;align-items:center;gap:10px}
-        .logo-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;animation:dotPulse 2.5s ease-in-out infinite}
-        @keyframes dotPulse{0%,100%{box-shadow:0 0 0 0 rgba(26,26,26,0.2)}50%{box-shadow:0 0 0 5px rgba(26,26,26,0)}}
-        .logo-text{font-size:16px;font-weight:700;color:var(--text-1);letter-spacing:-0.02em}
-        .logo-sep{color:var(--border);margin:0 1px}
-        .logo-sub{font-size:14px;font-weight:400;color:var(--text-3)}
-        .version{font-size:11px;color:var(--text-3);background:var(--surface-2);padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-weight:500}
-        .main{padding-top:72px;padding-bottom:48px}
-        .layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
-        @media(max-width:860px){.layout{grid-template-columns:1fr}}
-        .panel{display:flex;flex-direction:column;gap:12px}
-        .card{background:var(--surface);border-radius:var(--radius);padding:20px 22px;border:1px solid var(--border);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out forwards}
-        .card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.1s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.2s}
-        @keyframes cardIn{to{opacity:1;transform:translateY(0)}}
-        .card-head{display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;user-select:none;-webkit-user-select:none}
-        .card-head svg{width:16px;height:16px;color:var(--text-3);stroke-width:1.8;flex-shrink:0}
-        .card-title{font-size:12px;font-weight:700;color:var(--text-1);text-transform:uppercase;letter-spacing:.07em}
-        .card-chevron{margin-left:auto;color:var(--text-4);transition:transform .3s}
-        .card-chevron svg{width:14px;height:14px}
-        .card.collapsed .card-chevron{transform:rotate(-90deg)}
-        .card-body{display:grid;gap:14px;overflow:hidden;transition:max-height .35s ease,opacity .25s ease}
-        .card.collapsed .card-body{max-height:0!important;opacity:0;gap:0}
-        label.field{display:block}
-        .field-label{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-3);margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
-        .field-label svg{width:12px;height:12px;color:var(--text-4);stroke-width:1.8}
-        .field-hint{color:var(--text-4);font-weight:400;text-transform:none;letter-spacing:0}
-        input[type="text"],input[type="number"]{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;transition:border-color .2s,box-shadow .2s;background:var(--surface-2);color:var(--text-1)}
-        input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-light)}
-        input.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
-        .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-        .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-        .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-        .check-item{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;transition:border-color .2s,background .2s,transform .15s;gap:8px}
-        .check-item:hover{border-color:var(--border-hover);background:var(--surface-3)}
-        .check-item:active{transform:scale(.985)}
-        .check-info{flex:1;min-width:0}
-        .check-label{font-size:12px;font-weight:500;color:var(--text-1)}
-        .check-desc{font-size:10px;color:var(--text-3);margin-top:1px}
-        input[type="checkbox"]{width:15px;height:15px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
-        .btn-group{display:flex;gap:8px;margin-bottom:14px}
-        .btn{padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;border:none;position:relative;overflow:hidden}
-        .btn svg{width:15px;height:15px}
-        .btn-main{background:var(--accent);color:#fff;flex:1}
-        .btn-main:hover{background:#333;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
-        .btn-main:active{transform:translateY(0);box-shadow:none}
-        .btn .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:rippleOut .55s ease-out;pointer-events:none}
-        @keyframes rippleOut{to{transform:scale(4);opacity:0}}
-        .btn-sec{background:var(--surface);color:var(--text-1);border:1px solid var(--border);flex:1}
-        .btn-sec:hover{border-color:var(--border-hover);background:var(--surface-2)}
-        .donate-strip{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out .25s forwards}
-        .donate-strip svg{width:16px;height:16px;color:var(--text-4);stroke-width:1.8;flex-shrink:0}
-        .donate-text{flex:1;font-size:12px;color:var(--text-3);line-height:1.4}
-        .donate-text strong{color:var(--text-2);font-weight:500}
-        .btn-donate{padding:5px 12px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:all .2s}
-        .btn-donate svg{width:11px;height:11px}
-        .btn-donate:hover{border-color:var(--border-hover);color:var(--text-1)}
-        .out-card{background:var(--surface);border-radius:var(--radius);padding:20px 22px;border:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:64px;max-height:calc(100vh - 88px);opacity:0;transform:translateY(12px);animation:cardIn .45s ease-out .12s forwards}
-        .out-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
-        .out-title{font-size:12px;font-weight:700;color:var(--text-1);text-transform:uppercase;letter-spacing:.07em}
-        .out-count{font-size:11px;color:var(--text-4);font-family:'JetBrains Mono',monospace;transition:color .3s}
-        .out-count.fresh{color:var(--green)}
-        .out-sub{font-size:11px;color:var(--text-3);margin-bottom:12px}
-        .badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
-        .badge{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:600;letter-spacing:.02em}
-        .b-chain{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,134,58,.15)}
-        .b-repeat{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(111,66,193,.15)}
-        .b-setup{background:var(--surface-3);color:var(--text-3);border:1px solid var(--border)}
-        .cmd-list{flex:1;overflow-y:auto;padding-right:4px}
-        .cmd-list::-webkit-scrollbar{width:4px}
-        .cmd-list::-webkit-scrollbar-track{background:transparent}
-        .cmd-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-        .cmd-item{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:5px;border-left:3px solid var(--amber);opacity:0;transform:translateY(8px);transition:border-color .2s,box-shadow .2s}
-        .cmd-item.show{animation:cmdIn .3s ease-out forwards}
-        @keyframes cmdIn{to{opacity:1;transform:translateY(0)}}
-        .cmd-item:hover{border-color:var(--border-hover);box-shadow:0 2px 8px rgba(0,0,0,.04)}
-        .cmd-item.chain{border-left-color:var(--green)}
-        .cmd-item.repeat{border-left-color:var(--purple)}
-        .cmd-item.setup{border-left-color:var(--text-4)}
-        .cmd-item.sec{border-left-color:var(--red);margin-top:12px;background:var(--red-bg)}
-        .cmd-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
-        .cmd-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
-        .cmd-name{font-size:12px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .cmd-copy{font-size:10px;color:var(--text-3);background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:3px;font-weight:500;transition:all .2s}
-        .cmd-copy svg{width:11px;height:11px}
-        .cmd-copy:hover{background:var(--accent-light);border-color:var(--border-hover);color:var(--text-1)}
-        .cmd-code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg);padding:8px 10px;border-radius:4px;border:1px solid var(--border);word-break:break-all;line-height:1.65;color:var(--text-2)}
-        .cmd-note{font-size:10px;color:var(--text-3);margin-top:5px;display:flex;align-items:center;gap:3px}
-        .cmd-note svg{width:11px;height:11px;stroke-width:2}
-        .cmd-type{font-size:9px;font-weight:600;padding:1px 5px;border-radius:2px;background:var(--surface-3);color:var(--text-3);margin-left:4px;white-space:nowrap}
-        .cmd-type.delay{background:var(--amber-bg);color:var(--amber)}
-        .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:var(--text-4);gap:10px}
-        .empty svg{width:40px;height:40px;color:var(--border);stroke-width:1;animation:emptyFloat 3s ease-in-out infinite}
-        @keyframes emptyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-        .empty p{font-size:13px}
-        .footer{border-top:1px solid var(--border);padding:16px 0;background:var(--surface)}
-        .footer-inner{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-3)}
-        @media(max-width:600px){.footer-inner{flex-direction:column;gap:4px;text-align:center}}
-        .modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
-        .modal.show{display:flex}
-        .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-        .modal-box{position:relative;background:var(--surface);border-radius:12px;padding:28px;max-width:340px;width:100%;text-align:center;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,.1);animation:modalIn .3s cubic-bezier(.16,1,.3,1)}
-        @keyframes modalIn{from{transform:scale(.95) translateY(12px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
-        .modal-icon{width:44px;height:44px;background:var(--surface-2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--text-3)}
-        .modal-icon svg{width:20px;height:20px;stroke-width:1.8}
-        .modal-title{font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:6px}
-        .modal-text{font-size:12px;color:var(--text-3);margin-bottom:18px;line-height:1.5}
-        .qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-        .qr-box{aspect-ratio:1;background:var(--surface-2);border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-4)}
-        .btn-close{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-weight:600;transition:background .2s}
-        .btn-close:hover{background:#333}
-        .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);color:var(--text-1);padding:10px 16px;border-radius:var(--radius-sm);font-size:12px;z-index:200;font-weight:500;border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.08);display:flex;align-items:center;gap:7px;animation:toastIn .3s cubic-bezier(.16,1,.3,1)}
-        .toast svg{width:14px;height:14px;color:var(--green)}
-        .toast.out{animation:toastOut .25s ease-in forwards}
-        @keyframes toastIn{from{transform:translateY(12px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
-        @keyframes toastOut{to{transform:translateY(6px) scale(.97);opacity:0}}
-        .hidden{display:none!important}
-        @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MC头像制作</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:4px}
+:root{--bg:#f5f5f7;--panel:rgba(255,255,255,0.72);--panel-blur:blur(20px);--card:rgba(255,255,255,0.9);--border:rgba(0,0,0,0.06);--border-light:rgba(0,0,0,0.04);--fg:#1d1d1f;--fg2:#6e6e73;--muted:#86868b;--accent:#007aff;--accent-light:rgba(0,122,255,0.12);--red:#ff3b30;--red-light:rgba(255,59,48,0.12);--shadow-sm:0 2px 8px rgba(0,0,0,0.04),0 0 0 0.5px rgba(0,0,0,0.02);--shadow-md:0 8px 24px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.02);--shadow-lg:0 20px 40px rgba(0,0,0,0.08),0 0 0 0.5px rgba(0,0,0,0.02);--bottom-h:60px}
+body.dark{--bg:#0a0a0c;--panel:rgba(28,28,30,0.85);--card:rgba(28,28,30,0.95);--border:rgba(255,255,255,0.08);--border-light:rgba(255,255,255,0.04);--fg:#ffffff;--fg2:#8e8e93;--muted:#636366;--accent:#0a84ff;--accent-light:rgba(10,132,255,0.16);--red:#ff453a;--red-light:rgba(255,69,58,0.16)}
+.app{display:flex;flex-direction:column;height:100dvh;background:var(--bg);transition:background .3s}
+.topbar{background:var(--panel);backdrop-filter:var(--panel-blur);-webkit-backdrop-filter:var(--panel-blur);border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.title-group{display:flex;flex-direction:column;gap:2px}
+.main-title{font-size:15px;font-weight:600;letter-spacing:-0.3px;color:var(--fg);line-height:1.2}
+.sub-title{font-size:10px;font-weight:400;color:var(--muted);letter-spacing:-0.2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:500;transition:all .2s ease;font-size:13px;line-height:1;padding:8px 16px}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:var(--shadow-sm)}
+.btn-primary:active{transform:scale(0.96);background:#0066d9}
+.btn-secondary{background:var(--card);color:var(--fg);border:0.5px solid var(--border);backdrop-filter:blur(10px)}
+.btn-secondary:active{transform:scale(0.96);background:rgba(0,0,0,0.04)}
+.canvas-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative;min-height:0}
+.canvas-frame{position:relative;width:min(320px,calc(100dvw - 40px),calc(100dvh - 400px));aspect-ratio:1;overflow:visible;border-radius:12px;box-shadow:var(--shadow-lg);background:#fff;transition:box-shadow .2s}
+.canvas-frame canvas{width:100%;height:100%;display:block;border-radius:12px;image-rendering:pixelated}
+.sel-box{position:absolute;border:2px solid var(--accent);border-radius:8px;pointer-events:none;display:none;z-index:10;box-shadow:0 0 0 4px rgba(0,122,255,0.1)}
+.sel-box.show{display:block}
+.sel-box .dot{position:absolute;width:28px;height:28px;background:var(--accent);border:2.5px solid #fff;border-radius:50%;box-shadow:var(--shadow-md);pointer-events:auto;box-sizing:border-box;z-index:20;transform:translate(-50%,-50%);transition:transform .1s}
+.sel-box .dot:active{transform:translate(-50%,-50%) scale(1.15)}
+.sel-box .dot.tl{top:0;left:0;cursor:nw-resize}
+.sel-box .dot.tr{top:0;left:100%;cursor:ne-resize}
+.sel-box .dot.bl{top:100%;left:0;cursor:sw-resize}
+.sel-box .dot.br{top:100%;left:100%;cursor:se-resize}
+.sel-box .dot.rotate-handle{top:-36px;left:50%;width:26px;height:26px;background:var(--accent);border:2.5px solid #fff;border-radius:50%;cursor:grab;transform:translateX(-50%)}
+.sel-box .dot.rotate-handle:active{transform:translateX(-50%) scale(1.12)}
+.sel-label{position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap;pointer-events:none;z-index:15;box-shadow:var(--shadow-sm);letter-spacing:-0.2px}
+.canvas-meta{display:flex;gap:8px;margin-top:16px}
+.meta-tag{font-size:11px;color:var(--muted);background:var(--panel);backdrop-filter:var(--panel-blur);border:0.5px solid var(--border);padding:5px 12px;border-radius:20px;font-weight:500}
+.props-bar{background:var(--panel);backdrop-filter:var(--panel-blur);border-top:0.5px solid var(--border);padding:14px 20px;flex-shrink:0;display:none}
+.props-bar.show{display:block}
+.props-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:14px}
+.prop-cell{display:flex;flex-direction:column;align-items:center;gap:6px}
+.prop-cell .prop-lbl{font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.prop-cell .prop-val{font-size:13px;color:var(--accent);font-weight:600;min-width:36px;text-align:center;background:var(--accent-light);padding:2px 10px;border-radius:16px}
+.prop-cell input[type="range"]{-webkit-appearance:none;width:100%;height:3px;border-radius:3px;background:var(--border);outline:none}
+.prop-cell input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff;box-shadow:var(--shadow-sm)}
+.props-actions{display:flex;gap:10px}
+.props-actions .btn{flex:1;font-size:12px;padding:8px}
+.bottom-tabs{display:flex;background:var(--panel);backdrop-filter:var(--panel-blur);border-top:0.5px solid var(--border);height:var(--bottom-h);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;font-family:inherit;font-weight:500;transition:all .2s;position:relative}
+.tab-btn i{font-size:18px;transition:transform .15s}
+.tab-btn:active i{transform:scale(0.92)}
+.tab-btn.on{color:var(--accent)}
+.tab-btn.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:3px;background:var(--accent);border-radius:3px}
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(8px);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s}
+.drawer-overlay.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;left:0;right:0;bottom:0;background:var(--panel);backdrop-filter:var(--panel-blur);border-radius:20px 20px 0 0;z-index:100;transform:translateY(100%);transition:transform .3s cubic-bezier(0.2,0.9,0.3,1.1);max-height:65dvh;display:flex;flex-direction:column;border-top:0.5px solid var(--border)}
+.drawer.show{transform:translateY(0)}
+.drawer-handle{width:40px;height:4px;background:var(--border);border-radius:4px;margin:12px auto 8px;flex-shrink:0}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;padding:0 20px 12px;flex-shrink:0}
+.drawer-title{font-size:15px;font-weight:600;color:var(--fg);letter-spacing:-0.3px}
+.drawer-close{width:32px;height:32px;background:var(--card);border:0.5px solid var(--border);border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:14px;transition:all .15s}
+.drawer-close:active{transform:scale(0.92);background:var(--border)}
+.drawer-body{overflow-y:auto;padding:0 20px 24px;flex:1;min-height:0}
+.sec-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.sec-title i{font-size:11px;color:var(--accent)}
+.hr{height:0.5px;background:var(--border);margin:16px 0}
+.upload-box{border:1.5px dashed var(--border);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card)}
+.upload-box:active{border-color:var(--accent);background:var(--accent-light);transform:scale(0.98)}
+.upload-box .u-icon{width:44px;height:44px;margin:0 auto 10px;background:var(--card);border:0.5px solid var(--border);border-radius:12px;display:grid;place-items:center;color:var(--muted);font-size:20px}
+.upload-box .u-title{font-size:14px;font-weight:500;color:var(--fg);margin-bottom:4px}
+.upload-box .u-hint{font-size:11px;color:var(--muted)}
+.hide-file-input{display:none}
+.icon-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.icon-card{aspect-ratio:1;background:var(--card);border:0.5px solid var(--border);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.icon-card:active{transform:scale(0.95);background:var(--accent-light)}
+.icon-card.on{border-color:var(--accent);background:var(--accent-light);box-shadow:0 0 0 3px rgba(0,122,255,0.15)}
+.icon-card img{width:36px;height:36px;object-fit:contain;image-rendering:pixelated}
+.icon-card .pn{font-size:10px;color:var(--muted);font-weight:500}
+.icon-card.on .pn{color:var(--accent)}
+.icon-card .ck{position:absolute;top:6px;right:6px;width:16px;height:16px;background:var(--accent);border-radius:50%;display:none;place-items:center;font-size:8px;color:#fff}
+.icon-card.on .ck{display:grid}
+.ly-list{display:flex;flex-direction:column;gap:8px}
+.ly-empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:13px}
+.ly-empty i{font-size:44px;margin-bottom:12px;display:block;opacity:0.5}
+.ly-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:0.5px solid transparent;cursor:pointer;transition:all .15s;background:var(--card);box-shadow:var(--shadow-sm)}
+.ly-item:active{transform:scale(0.98)}
+.ly-item.sel{background:var(--accent-light);border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,122,255,0.1)}
+.ly-thumb{width:36px;height:36px;border-radius:8px;image-rendering:pixelated;background:repeating-conic-gradient(#e5e5e7 0% 25%,#d1d1d6 0% 50%) 0 0 / 8px 8px;flex-shrink:0;overflow:hidden;display:grid;place-items:center}
+.ly-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.ly-info{flex:1;min-width:0}
+.ly-name{font-size:13px;font-weight:600;color:var(--fg);line-height:1.3}
+.ly-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.ly-acts{display:flex;gap:4px;flex-shrink:0}
+.btn-icon{width:32px;height:32px;padding:0;background:transparent;border:0.5px solid transparent;border-radius:8px;color:var(--muted);font-size:13px;cursor:pointer;display:grid;place-items:center;transition:all .12s}
+.btn-icon:active{background:var(--card);border-color:var(--border);transform:scale(0.92)}
+.btn-icon.del:active{color:var(--red);background:var(--red-light)}
+.btn-del{width:100%;background:transparent;color:var(--red);font-weight:500;border:0.5px solid rgba(255,59,48,0.3);border-radius:10px;padding:10px;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .12s}
+.btn-del:active{background:var(--red-light);border-color:var(--red);transform:scale(0.97)}
+.theme-btn{width:32px;height:32px;background:var(--card);border:0.5px solid var(--border);border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--fg2);font-size:14px;transition:all .2s}
+.theme-btn:active{transform:scale(0.94)}
+.undo-redo-bar{display:flex;gap:6px}
+.undo-redo-bar .btn-icon{width:30px;height:30px;font-size:12px;background:var(--card);border:0.5px solid var(--border);border-radius:8px}
+.right-actions{display:flex;align-items:center;gap:12px}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) scale(0.9);background:rgba(0,0,0,0.8);backdrop-filter:blur(20px);color:#fff;padding:10px 24px;border-radius:40px;font-size:13px;font-weight:500;z-index:200;opacity:0;transition:all .2s;pointer-events:none;letter-spacing:-0.2px}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1)}
+.loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.8);backdrop-filter:blur(8px);border-radius:12px;display:flex;align-items:center;justify-content:center;z-index:25;opacity:0;pointer-events:none;transition:opacity .2s}
+.loading-overlay.show{opacity:1;pointer-events:auto}
+.loading-spinner{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.preview-modal{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:300;display:none;align-items:center;justify-content:center}
+.preview-modal.show{display:flex}
+.preview-content{background:transparent;padding:0;max-width:95vw;max-height:95vh;overflow:auto}
+.preview-canvas{display:block;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.preview-header{display:flex;justify-content:flex-end;align-items:center;margin-bottom:12px}
+.preview-close{width:36px;height:36px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:16px;transition:all .2s}
+.preview-close:active{transform:scale(0.92);background:rgba(0,0,0,0.8)}
+.preview-info{margin-top:12px;text-align:center;font-size:12px;color:rgba(255,255,255,0.7);padding:8px 0}
+.footer{background:var(--panel);backdrop-filter:var(--panel-blur);border-top:0.5px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-size:11px;color:var(--muted)}
+.footer a{color:var(--accent);text-decoration:none}
+.footer a:active{opacity:0.7}
+.footer .copyright{display:flex;align-items:center;gap:6px}
+.footer .group-link{display:flex;align-items:center;gap:6px;background:var(--accent-light);padding:5px 12px;border-radius:20px;color:var(--accent);font-weight:500}
+.footer .group-link i{font-size:12px}
+.footer .group-link:active{transform:scale(0.96)}
+</style>
 </head>
 <body>
-    <header class="header">
-        <div class="container header-inner">
-            <div class="logo"><span class="logo-dot"></span><span class="logo-text">鱼竿枪生成器</span><span class="logo-sep">/</span><span class="logo-sub">V2.0</span></div>
-            <span class="version">1.20+ Bedrock</span>
-        </div>
-    </header>
-    <main class="main">
-        <div class="container layout">
-            <div class="panel">
-                <!-- 基础设置 -->
-                <div class="card" id="c1">
-                    <div class="card-head" onclick="toggleCard('c1')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 17.66l-4.24 4.24M23 12h-6m-6 0H1m20.24 4.24l-4.24-4.24M6.34 6.34L2.1 2.1"/></svg>
-                        <span class="card-title">基础设置</span>
-                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
-                    </div>
-                    <div class="card-body">
-                        <div class="row2">
-                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg> 武器标签</div><input type="text" id="tag" value="枪" class="mono" style="color:#1a73e8"></label>
-                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg> 基础伤害</div><input type="number" id="dmg" value="20" min="1"></label>
-                        </div>
-                        <div class="row3">
-                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg> 射程</div><input type="number" id="dist" value="32" min="5" max="128"></label>
-                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 2v4M8 2v4M2 10h20"/></svg> 弹匣</div><input type="number" id="magSize" value="30" min="1"></label>
-                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> 备弹</div><input type="number" id="totalAmmo" value="999" min="1"></label>
-                        </div>
-                        <div class="row3">
-                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 射击间隔</div><input type="number" id="fireRate" value="0" min="0" max="60"></label>
-                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> 换弹时间</div><input type="number" id="reloadTime" value="40" min="1" max="200"></label>
-                            <label class="field"><div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 连射数</div><input type="number" id="burstCount" value="1" min="1" max="10"></label>
-                        </div>
-                    </div>
-                </div>
-                <!-- 特效选项 -->
-                <div class="card" id="c2">
-                    <div class="card-head" onclick="toggleCard('c2')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                        <span class="card-title">特效选项</span>
-                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
-                    </div>
-                    <div class="card-body">
-                        <label class="field"><div class="field-label">轨迹粒子</div><input type="text" id="particle" value="minecraft:balloon_gas_particle" class="mono"></label>
-                        <label class="field"><div class="field-label">射击音效</div><input type="text" id="sndShoot" value="mob.zombie.woodbreak" class="mono"></label>
-                        <label class="field"><div class="field-label">换弹音效</div><input type="text" id="sndReload" value="armor.equip_leather" class="mono"></label>
-                        <div class="check-grid">
-                            <label class="check-item"><div class="check-info"><div class="check-label">穿墙检测</div><div class="check-desc">遇方块停止</div></div><input type="checkbox" id="wallCheck" checked></label>
-                            <label class="check-item"><div class="check-info"><div class="check-label">显示粒子</div><div class="check-desc">子弹飞行轨迹</div></div><input type="checkbox" id="particleOn" checked></label>
-                            <label class="check-item"><div class="check-info"><div class="check-label">射击音效</div><div class="check-desc">开火时播放</div></div><input type="checkbox" id="soundOn" checked></label>
-                            <label class="check-item"><div class="check-info"><div class="check-label">屏幕抖动</div><div class="check-desc">相机震动</div></div><input type="checkbox" id="shakeOn" checked></label>
-                            <label class="check-item"><div class="check-info"><div class="check-label">枪口粒子</div><div class="check-desc">开火闪光效果</div></div><input type="checkbox" id="muzzleOn" checked></label>
-                            <label class="check-item"><div class="check-info"><div class="check-label">散射偏移</div><div class="check-desc">随机弹道偏移</div></div><input type="checkbox" id="spreadOn"></label>
-                        </div>
-                    </div>
-                </div>
-                <!-- 弹药系统 -->
-                <div class="card" id="c3">
-                    <div class="card-head" onclick="toggleCard('c3')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                        <span class="card-title">弹药系统</span>
-                        <span class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
-                    </div>
-                    <div class="card-body">
-                        <div class="check-grid">
-                            <label class="check-item"><div class="check-info"><div class="check-label">弹药计数</div><div class="check-desc">弹匣+备弹</div></div><input type="checkbox" id="ammoOn" checked></label>
-                            <label class="check-item"><div class="check-info"><div class="check-label">换弹系统</div><div class="check-desc">空弹自动换弹</div></div><input type="checkbox" id="reloadOn" checked></label>
-                            <label class="check-item"><div class="check-info"><div class="check-label">弹药补给</div><div class="check-desc">抬头+消耗物品</div></div><input type="checkbox" id="supplyOn"></label>
-                            <label class="check-item"><div class="check-info"><div class="check-label">HUD显示</div><div class="check-desc">弹匣/备弹/冷却</div></div><input type="checkbox" id="hudOn" checked></label>
-                        </div>
-                        <div id="supplyWrap" class="hidden" style="display:grid;gap:10px">
-                            <label class="field"><div class="field-label">补给物品ID</div><input type="text" id="supplyItem" value="white_candle" class="mono"></label>
-                            <div class="row2">
-                                <label class="field"><div class="field-label">补给弹药量</div><input type="number" id="supplyAmount" value="100" min="1"></label>
-                                <label class="field"><div class="field-label">补给最大上限</div><input type="number" id="supplyMax" value="999" min="1"></label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="donate-strip">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-                    <span class="donate-text">免费开源工具，<strong>欢迎支持</strong></span>
-                    <button class="btn-donate" onclick="showDonate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> 赞赏</button>
-                </div>
-            </div>
-            <!-- 输出面板 -->
-            <div class="out-card">
-                <div class="btn-group">
-                    <button class="btn btn-main" onclick="gen(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg> 生成指令</button>
-                    <button class="btn btn-sec" onclick="copyAll(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 复制全部</button>
-                </div>
-                <div class="out-head"><span class="out-title">命令方块序列</span><span class="out-count" id="cmdCount"></span></div>
-                <div class="out-sub">未标注均为 循环 · 无条件 · 保持开启</div>
-                <div class="badges"><span class="badge b-repeat">循环</span><span class="badge b-chain">连锁</span><span class="badge b-setup">设置</span></div>
-                <div id="out" class="cmd-list"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg><p>配置参数后点击生成</p></div></div>
-            </div>
-        </div>
-    </main>
-    <footer class="footer"><div class="container footer-inner"><span>鱼竿枪生成器 · 基岩版无实体射线枪 V2.1</span><span>参考 木薯 NX鱼竿枪</span></div></footer>
-    <div id="modal" class="modal" onclick="if(event.target.classList.contains('modal-bg'))hideDonate()"><div class="modal-bg"></div><div class="modal-box"><div class="modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div><div class="modal-title">感谢支持</div><div class="modal-text">你的支持是我们持续更新的动力</div><div class="qr-grid"><div><div class="qr-box">微信赞赏码</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">微信</div></div><div><div class="qr-box">支付宝赞赏码</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">支付宝</div></div></div><button class="btn-close" onclick="hideDonate()">关闭</button></div></div>
-    <script>
-        const $=id=>document.getElementById(id),on=(el,evt,fn)=>el.addEventListener(evt,fn);
-        let cmds=[];
-        function toggleCard(id){const c=$(id),b=c.querySelector('.card-body');if(c.classList.contains('collapsed')){c.classList.remove('collapsed');b.style.maxHeight=b.scrollHeight+'px';setTimeout(()=>b.style.maxHeight='none',350)}else{b.style.maxHeight=b.scrollHeight+'px';requestAnimationFrame(()=>{b.style.maxHeight='0';c.classList.add('collapsed')})}}
-        document.querySelectorAll('.card-body').forEach(b=>b.style.maxHeight='none');
-        on($('supplyOn'),'change',()=>{$('supplyWrap').classList.toggle('hidden',!$('supplyOn').checked)});
-        function addRipple(b,e){const r=b.getBoundingClientRect(),rp=document.createElement('span');rp.className='ripple';const s=Math.max(r.width,r.height);rp.style.width=rp.style.height=s+'px';rp.style.left=(e.clientX-r.left-s/2)+'px';rp.style.top=(e.clientY-r.top-s/2)+'px';b.appendChild(rp);setTimeout(()=>rp.remove(),550)}
-        function showDonate(){$('modal').classList.add('show')}function hideDonate(){$('modal').classList.remove('show')}
-
-        // 递推射线段（facing entity 递推链）
-        const RAY='anchored eyes facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^1 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^2 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^4 facing entity @e[tag=%T%,type=xp_orb] feet positioned ^ ^ ^8 positioned ^ ^ ^16 if entity @e[tag=%T%,type=xp_orb,r=16] positioned ^ ^ ^-16 if entity @e[tag=%T%,type=xp_orb,r=16]';
-        function rs(t){return RAY.replace(/%T%/g,t)}
-
-        // 生成指令
-        function gen(btn,e){
-            if(btn&&e)addRipple(btn,e);
-            const t=$('tag').value||'枪',dmg=parseInt($('dmg').value)||20,dist=parseInt($('dist').value)||32,
-                  mag=parseInt($('magSize').value)||30,total=parseInt($('totalAmmo').value)||999,
-                  rate=parseInt($('fireRate').value)||0,reload=parseInt($('reloadTime').value)||40,
-                  burst=parseInt($('burstCount').value)||1,
-                  ptc=$('particle').value,sndS=$('sndShoot').value||'mob.zombie.woodbreak',
-                  sndR=$('sndReload').value||'armor.equip_leather',
-                  wall=$('wallCheck').checked,ptcOn=$('particleOn').checked,
-                  sndOn=$('soundOn').checked,shakeOn=$('shakeOn').checked,
-                  shakeVal=(parseInt($('shake')?.value||5)*0.05).toFixed(2),
-                  muzzleOn=$('muzzleOn').checked,spreadOn=$('spreadOn').checked,
-                  ammoOn=$('ammoOn').checked,reloadOn=$('ammoOn')&&$('reloadOn').checked,
-                  supplyOn=$('ammoOn')&&$('supplyOn').checked,
-                  supplyItem=$('supplyItem').value||'white_candle',
-                  supplyAmt=parseInt($('supplyAmount').value)||100,
-                  supplyMax=parseInt($('supplyMax').value)||999,
-                  hudOn=$('hudOn').checked;
-            cmds=[];
-            const add=(tp,l,c,d,s)=>cmds.push({t:tp,l,c,d,s:!!s});
-            const r=rs(t);
-
-            // ══════════════════════════════════════════
-            //  设置命令（聊天框执行一次）
-            // ══════════════════════════════════════════
-            add('setup','创建弹药计分板',`/scoreboard objectives add ${t}_子弹 dummy "子弹"`,null,true);
-            add('setup','创建最大弹药计分板',`/scoreboard objectives add ${t}_max dummy "最大弹药"`,null,true);
-            if(ammoOn) add('setup','创建总弹药计分板',`/scoreboard objectives add ${t}_总子弹 dummy "总子弹"`,null,true);
-            add('setup','创建间隔计分板',`/scoreboard objectives add ${t}_间隔 dummy "间隔"`,null,true);
-            if(burst>1) add('setup','创建连射计分板',`/scoreboard objectives add ${t}_连射 dummy "连射"`,null,true);
-            if(reloadOn){add('setup','创建换弹时间计分板',`/scoreboard objectives add ${t}_换弹时间 dummy "换弹时间"`,null,true);add('setup','创建设置换弹时间计分板',`/scoreboard objectives add ${t}_设置换弹时间 dummy "设置换弹时间"`,null,true)}
-            add('setup','创建枪械计分板',`/scoreboard objectives add ${t}_枪 dummy "${t}"`,null,true);
-            if(spreadOn) add('setup','创建散射计分板',`/scoreboard objectives add ${t}_随机 dummy "随机"`,null,true);
-            if(spreadOn) add('setup','创建y散射计分板',`/scoreboard objectives add ${t}_y随机 dummy "y随机"`,null,true);
-
-            add('setup','初始化弹药上限',`/scoreboard players set @a ${t}_max ${mag}`,null,true);
-            add('setup','初始化弹匣弹药',`/scoreboard players set @a ${t}_子弹 ${mag}`,null,true);
-            if(ammoOn) add('setup','初始化备弹总量',`/scoreboard players set @a ${t}_总子弹 ${total}`,null,true);
-            add('setup','初始化间隔',`/scoreboard players set @a ${t}_间隔 0`,null,true);
-            if(burst>1) add('setup','初始化连射',`/scoreboard players set @a ${t}_连射 ${burst}`,null,true);
-            if(reloadOn) add('setup','初始化换弹时间设置',`/scoreboard players set @a ${t}_设置换弹时间 ${reload}`,null,true);
-
-            // ══════════════════════════════════════════
-            //  换弹&前置（循环 · 延迟4 · 保持开启）
-            // ══════════════════════════════════════════
-            if(reloadOn){
-                add('repeat','换弹清除title',`execute as @a[scores={${t}_换弹时间=1..}] at @s run titleraw @s title {"rawtext":[{"text":"§r"}]}`,'清除title残留','delay');
-                add('repeat','换弹进度显示',`execute as @a[scores={${t}_换弹时间=1..}] at @s run titleraw @s subtitle {"rawtext":[{"text":"\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n§fＲｅｌｏａｄｉｎｇ §7＞＞§f "},{"score":{"name":"@s","objective":"${t}_换弹时间"}}]}`,'显示换弹倒计时','delay');
-                add('repeat','换弹时间递减',`scoreboard players remove @a[scores={${t}_换弹时间=1..}] ${t}_换弹时间 1`,'每tick递减','delay');
-                // 换弹完成
-                add('repeat','换弹完成补满',`execute as @a[scores={${t}_换弹时间=1,${t}_子弹=0,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 >= @s ${t}_max run scoreboard players operation @s ${t}_子弹 = @s ${t}_max`,'备弹>=弹匣时补满','delay');
-                add('repeat','换弹完成扣除备弹',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 >= @s ${t}_max run scoreboard players operation @s ${t}_总子弹 -= @s ${t}_max`,'扣除弹匣容量','delay');
-                add('repeat','换弹完成补剩余',`execute as @a[scores={${t}_换弹时间=1,${t}_子弹=0,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 < @s ${t}_max run scoreboard players operation @s ${t}_子弹 = @s ${t}_总子弹`,'备弹不足时补剩余','delay');
-                add('repeat','换弹完成清备弹',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=1..}] at @s if score @s ${t}_总子弹 < @s ${t}_max run scoreboard players remove @s ${t}_总子弹 0`,'备弹清零(通过operation)','delay');
-                // 用更可靠的方式清零
-                add('repeat','换弹完成音效',`execute as @a[scores={${t}_换弹时间=1,${t}_总子弹=0..}] at @s run playsound ${sndR} @s ~~~ 1 1.2`,'换弹完成音效','delay');
-                add('repeat','设置title时间',`title @a times 0 5 0`,'设置title显示5tick','delay');
-            }
-
-            // ══════════════════════════════════════════
-            //  前置初始化（循环 · 无条件 · 保持开启）
-            // ══════════════════════════════════════════
-            add('repeat','初始化实体计分板',`scoreboard players add @e ${t}_枪 0`,'确保实体有计分板值');
-            add('repeat','初始化玩家间隔',`scoreboard players add @a ${t}_间隔 0`,'确保玩家有间隔值');
-            if(reloadOn) add('repeat','初始化换弹计分板',`scoreboard players add @a ${t}_换弹时间 0`,'确保玩家有换弹时间值');
-            add('repeat','间隔递减',`scoreboard players remove @a[scores={${t}_间隔=1..}] ${t}_间隔 1`,'每tick减少射击间隔');
-
-            // 空弹杀鱼钩
-            if(ammoOn) add('repeat','空弹杀鱼钩',`execute as @a[scores={${t}_子弹=..0}] at @s run kill @e[r=3,type=fishing_hook]`,'弹药为0时杀死鱼钩');
-
-            // 弹药补给
-            if(supplyOn){
-                add('repeat','抬头补给备弹',`scoreboard players add @a[hasitem={item=${supplyItem},location=slot.weapon.mainhand},rxm=88] ${t}_总子弹 ${supplyAmt}`,`抬头+${supplyItem}→备弹+${supplyAmt}`);
-                add('repeat','补给上限限制',`execute as @a[scores={${t}_总子弹=${supplyMax+1}..}] run scoreboard players set @s ${t}_总子弹 ${supplyMax}`,`备弹上限${supplyMax}`);
-                add('repeat','消耗补给物品',`clear @a[hasitem={item=${supplyItem},location=slot.weapon.mainhand},rxm=88] ${supplyItem} 0 1`,'消耗1个补给物品');
-            }
-
-            // ══════════════════════════════════════════
-            //  主体射击（循环 · 保持开启）
-            // ══════════════════════════════════════════
-            add('repeat','标记鱼钩',`execute at @e[c=1,type=fishing_hook] as @e[r=3,c=2] at @s unless entity @s[type=!fishing_hook,type=!player] run tag @s add ${t}`,'检测鱼钩并标记');
-
-            // 空弹自动换弹
-            if(ammoOn&&reloadOn){
-                add('repeat','空弹触发换弹',`execute as @e[type=fishing_hook,tag=${t}] at @s as @p[r=2.5,scores={${t}_子弹=0,${t}_总子弹=1..,${t}_换弹时间=0}] at @s run scoreboard players operation @s ${t}_换弹时间 = @s ${t}_设置换弹时间`,'弹匣空+有备弹+未换弹→开始换弹');
-            }
-
-            // 间隔检查
-            add('repeat','射击间隔检查',`execute as @e[tag=${t},type=fishing_hook] at @s unless entity @p[tag=${t},scores={${t}_间隔=0}] run tag @s remove ${t}`,'射击间隔未完则移除标签');
-
-            // 弹药检查+扣除
-            if(ammoOn){
-                add('repeat','弹药检查',`execute as @e[tag=${t},type=fishing_hook] at @s unless entity @p[tag=${t},scores={${t}_子弹=1..}] run tag @s remove ${t}`,'弹药不足则移除标签');
-                // 连射限制
-                if(burst>1){
-                    add('repeat','连射数检查',`execute as @e[tag=${t},type=fishing_hook] at @s as @p[tag=${t}] at @s unless score @s ${t}_子弹 >= @s ${t}_连射 run tag @e[type=fishing_hook,tag=${t},r=3] remove ${t}`,'子弹数不够连射则移除标签');
-                    add('repeat','扣除连射弹药',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players operation @s ${t}_子弹 -= @s ${t}_连射`,'连射扣除对应弹药');
-                }else{
-                    add('repeat','扣除弹药',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players remove @s ${t}_子弹 1`,'射击消耗1发弹药');
-                }
-            }
-
-            // 设置射击间隔
-            if(rate>0) add('repeat','设置射击间隔',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run scoreboard players set @s ${t}_间隔 ${rate}`,`设置${rate}tick射击间隔`);
-
-            // 传送鱼钩到射程
-            add('repeat','传送鱼钩',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] run tp @s ^ ^ ^${dist} facing @p[tag=${t}]`,`将鱼钩瞬移到玩家前方${dist}格`);
-
-            // 生成弹丸(xp_orb)
-            add('repeat','生成弹丸',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] positioned ^ ^1.5 ^ run summon xp_orb ^ ^ ^0.2`,'在玩家眼部生成弹丸实体');
-
-            // 设置弹丸枪械值
-            add('repeat','设置弹丸计分板',`execute as @e[type=xp_orb,scores={${t}_枪=0}] at @s run scoreboard players set @s ${t}_枪 1`,'标记弹丸实体');
-
-            // 散射偏移
-            if(spreadOn){
-                add('chain','设置随机值',`scoreboard players random @e[type=xp_orb,scores={${t}_枪=1}] ${t}_随机 1 6`,'1-6对应6档偏移');
-                add('chain','设置y随机值',`scoreboard players random @e[type=xp_orb,scores={${t}_枪=1}] ${t}_y随机 1 6`,'1-6对应6档偏移');
-                // x偏移
-                add('chain','x偏移+0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=1}] at @s run tp @s ~0.7~~`);add('chain','x偏移-0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=2}] at @s run tp @s ~-0.7~~`);add('chain','x偏移+1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=3}] at @s run tp @s ~1.7~~`);add('chain','x偏移-1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=4}] at @s run tp @s ~-1.7~~`);add('chain','x偏移+4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=5}] at @s run tp @s ~4~~`);add('chain','x偏移-4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_随机=6}] at @s run tp @s ~-4~~`);
-                // y偏移
-                add('chain','y偏移+0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=1}] at @s run tp @s ~~0.7~`);add('chain','y偏移-0.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=2}] at @s run tp @s ~~-0.7~`);add('chain','y偏移+1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=3}] at @s run tp @s ~~1.7~`);add('chain','y偏移-1.7',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=4}] at @s run tp @s ~~-1.7~`);add('chain','y偏移+4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=5}] at @s run tp @s ~~4~`);add('chain','y偏移-4',`execute as @e[type=xp_orb,scores={${t}_枪=1,${t}_y随机=6}] at @s run tp @s ~~-4~`);
-            }
-
-            // 枪口粒子
-            if(muzzleOn) add('repeat','枪口粒子',`execute as @e[tag=${t},type=fishing_hook] at @s at @p[tag=${t}] positioned ^ ^1.5 ^ run particle minecraft:blue_flame_particle ^ ^ ^0.2`,'枪口闪光粒子效果');
-
-            // 将玩家标签传给弹丸
-            add('repeat','标记弹丸标签',`execute as @e[type=xp_orb,scores={${t}_枪=1}] at @s as @p[tag=${t},r=64] run tag @s add ${t}`,'将玩家武器标签传给弹丸');
-
-            // 递推射线 - 穿墙检测
-            if(wallCheck) add('repeat','穿墙检测',`execute at @a[tag=${t}] ${r} unless block ~~1.4~ air run tp @e[tag=${t},type=xp_orb] ~ ~ ~`,'遇非空气方块弹丸传至碰撞点');
-
-            // 递推射线 - 粒子轨迹
-            if(ptcOn&&ptc) add('repeat','粒子轨迹',`execute at @a[tag=${t}] ${r} run particle ${ptc}`,'沿递推路径生成粒子');
-
-            // 递推射线 - 伤害判定
-            add('repeat','伤害判定',`execute at @a[tag=${t}] ${r} run damage @e[tag=!${t},r=1,y=~-1] ${dmg} entity_attack entity @a[tag=${t}]`,`对弹丸附近1格内非标签实体造成${dmg}伤害`);
-
-            // 射击音效
-            if(sndOn) add('repeat','射击音效',`execute at @e[tag=${t},type=fishing_hook] run playsound ${sndS} @a[r=48] ~~~ 1 1 0`,'播放射击音效');
-
-            // 屏幕抖动
-            if(shakeOn) add('repeat','屏幕抖动',`execute at @e[tag=${t},type=fishing_hook] at @p[tag=${t}] run camerashake add @s ${shakeVal} 0.1 positional`,'射击时相机抖动');
-
-            // 清除鱼钩
-            add('repeat','清除鱼钩',`kill @e[type=fishing_hook,tag=${t}]`,'射击完成后移除鱼钩');
-
-            // 清除弹丸
-            add('repeat','清除弹丸',`execute as @e[tag=${t},type=xp_orb,scores={${t}_枪=1}] at @s run kill @s`,'清除弹丸实体');
-
-            // 清除标签
-            add('repeat','清除标签',`tag @a[tag=${t}] remove ${t}`,'移除玩家武器标签');
-
-            // ══════════════════════════════════════════
-            //  HUD显示（循环 · 无条件 · 保持开启）
-            // ══════════════════════════════════════════
-            if(hudOn){
-                let hudJson;
-                if(ammoOn){
-                    hudJson=`{"rawtext":[{"text":"§b▏ §f${t} §7-§e "},{"score":{"name":"@s","objective":"${t}_子弹"}},{"text":"§f/§7${mag}"},{"text":" §8| §f备弹 §e"},{"score":{"name":"@s","objective":"${t}_总子弹"}},{"text":"\\n§b▏ §f射击冷却 §e"},{"score":{"name":"@s","objective":"${t}_间隔"}},{"text":"§ft"}]}`;
-                }else{
-                    hudJson=`{"rawtext":[{"text":"§b▏ §f射击冷却 §e"},{"score":{"name":"@s","objective":"${t}_间隔"}},{"text":"§ft"}]}`;
-                }
-                add('repeat','HUD显示',`execute as @a[hasitem={item=fishing_rod,location=slot.weapon.mainhand}] run titleraw @s actionbar ${hudJson}`,'持鱼竿时显示弹药和冷却');
-            }
-
-            render();
-        }
-
-        function render(){
-            const c=$('out');
-            if(!cmds.length){c.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg><p>配置参数后点击生成</p></div>';$('cmdCount').textContent='';return}
-            const counter=$('cmdCount');counter.textContent=cmds.length+' 条';counter.classList.add('fresh');setTimeout(()=>counter.classList.remove('fresh'),1200);
-            c.innerHTML=cmds.map((cmd,i)=>{
-                const cls=cmd.s?'sec':cmd.t==='chain'?'chain':cmd.t==='repeat'?'repeat':'setup';
-                const badge=cmd.t==='chain'?'b-chain':cmd.t==='repeat'?'b-repeat':'b-setup';
-                const name=cmd.t==='chain'?'连锁':cmd.t==='repeat'?'循环':'设置';
-                const typeTag=cmd.s?'<span class="cmd-type delay">延迟4</span>':'';
-                return `<div class="cmd-item ${cls}" style="animation-delay:${Math.min(i*20,600)}ms">
-                    <div class="cmd-header"><div class="cmd-meta"><span class="badge ${badge}">${name}</span>${typeTag}<span class="cmd-name">${cmd.l}</span></div>
-                    <button class="cmd-copy" onclick="copyOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 复制</button></div>
-                    <div class="cmd-code">${cmd.c.replace(/</g,'&lt;')}</div>
-                    ${cmd.d?`<div class="cmd-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> ${cmd.d}</div>`:''}
-                </div>`}).join('');
-            requestAnimationFrame(()=>{c.querySelectorAll('.cmd-item').forEach(el=>el.classList.add('show'))});
-        }
-        function copyOne(i){navigator.clipboard.writeText(cmds[i].c).then(()=>toast('已复制'))}
-        function copyAll(btn,e){if(btn&&e)addRipple(btn,e);if(!cmds.length)return toast('暂无指令');const txt=cmds.map(c=>c.s?`\n# ══ ${c.l} ══\n${c.c}`:`# ${c.l}\n${c.c}`).join('\n\n');navigator.clipboard.writeText(txt).then(()=>toast('全部已复制'))}
-        function toast(msg){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ${msg}`;document.body.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),250)},1800)}
-    </script>
+<div class="app">
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="title-group">
+      <div class="main-title">MC头像制作</div>
+      <div class="sub-title">矩阵方块</div>
+    </div>
+    <div class="undo-redo-bar">
+      <button class="btn-icon" id="undoBtn"><i class="fas fa-undo"></i></button>
+      <button class="btn-icon" id="redoBtn"><i class="fas fa-redo"></i></button>
+    </div>
+  </div>
+  <div class="right-actions">
+    <button class="theme-btn" id="themeBtn"><i class="fas fa-moon"></i></button>
+    <button class="btn btn-secondary" id="previewBtn"><i class="fas fa-eye"></i> 预览</button>
+    <button class="btn btn-primary" id="exportBtn"><i class="fas fa-download"></i> 导出</button>
+  </div>
+</header>
+<main class="canvas-area"><div class="canvas-frame" id="canvasFrame"><canvas id="mainCv" width="300" height="300"></canvas><div class="sel-box" id="selBox"><div class="sel-label" id="selLabel">图标</div><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div><div class="dot rotate-handle"></div></div><div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div></div></div><div class="canvas-meta"><span class="meta-tag" id="metaSize">未上传</span></div></main>
+<div class="props-bar" id="propsBar"><div class="props-grid"><div class="prop-cell"><span class="prop-lbl">大小</span><span class="prop-val" id="barSizeVal">60</span><input type="range" id="barSize" min="8" max="400" value="60"></div><div class="prop-cell"><span class="prop-lbl">旋转</span><span class="prop-val" id="barRotateVal">0°</span><input type="range" id="barRotate" min="0" max="360" value="0"></div><div class="prop-cell"><span class="prop-lbl">透明</span><span class="prop-val" id="barOpacityVal">100%</span><input type="range" id="barOpacity" min="5" max="100" value="100"></div></div><div class="props-actions"><button class="btn btn-secondary" id="barFlipH"><i class="fas fa-arrows-left-right"></i> 水平翻转</button><button class="btn btn-secondary" id="barFlipV"><i class="fas fa-arrows-up-down"></i> 垂直翻转</button><button class="btn btn-secondary" id="barResetPos"><i class="fas fa-crosshairs"></i> 重置</button><button class="btn btn-del" id="barDel"><i class="fas fa-trash-can"></i></button></div></div>
+<nav class="bottom-tabs"><button class="tab-btn on" onclick="openDrawer('upload')"><i class="fas fa-image"></i>上传</button><button class="tab-btn" onclick="openDrawer('layers')"><i class="fas fa-layer-group"></i>图层</button></nav>
+<div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawerUpload"><div class="drawer-handle"></div><div class="drawer-header"><span class="drawer-title">上传与图案</span><button class="drawer-close" onclick="closeDrawer()"><i class="fas fa-xmark"></i></button></div><div class="drawer-body"><div class="sec-title"><i class="fas fa-image"></i> 照片上传</div><div class="upload-box" id="uploadBox"><div class="u-icon"><i class="fas fa-arrow-up-from-bracket"></i></div><div class="u-title">点击或拖拽上传头像</div><div class="u-hint">支持 JPG / PNG / WebP</div><input type="file" class="hide-file-input" id="fileInput" accept="image/*"></div><div class="hr"></div><div class="sec-title"><i class="fas fa-shapes"></i> 装饰图案</div><div class="icon-grid" id="iconGrid"></div></div></div>
+<div class="drawer" id="drawerLayers"><div class="drawer-handle"></div><div class="drawer-header"><span class="drawer-title">图层管理</span><button class="drawer-close" onclick="closeDrawer()"><i class="fas fa-xmark"></i></button></div><div class="drawer-body"><div class="ly-list" id="layerList"></div></div></div>
+<div class="footer"><div class="copyright"><i class="far fa-copyright"></i> 2025-2026 矩阵方块</div><a href="https://qun.qq.com/universal-share/share?ac=1&authKey=WvmFtL8Ouxj9PoS8XIUhdvlOAOC%2BKP92BDnHMpA9IXpuP9G32x22yzU%2BEddWGxuu&busi_data=eyJncm91cENvZGUiOiIxOTIxNTQ1MDUiLCJ0b2tlbiI6Im9PdjFoSDJEbTFWbklpOFZkbU9DL0xsYXVXQlpVSXFUZ05Xb1NVRnRkRUM5RDBNTUwwL2JFajB2VVAvREVXZFciLCJ1aW4iOiIzMTQ4NzA1ODQ2In0%3D&data=cFX5Q4POR3GIgk7FrsOuhGfrzDbXzbyx3s5JRsGwyfkBz-ZcjR-g4dWxdNJMga1FrocloZIhWwYQYZYhM6JxvQ&svctype=4&tempid=h5_group_info" target="_blank" class="group-link" id="groupLink"><i class="fab fa-qq"></i> 加入群聊 <i class="fas fa-arrow-right" style="font-size:10px"></i></a></div>
+<div class="toast" id="toast">操作成功</div>
+<div class="preview-modal" id="previewModal"><div class="preview-content"><div class="preview-header"><button class="preview-close" id="closePreviewBtn"><i class="fas fa-times"></i></button></div><canvas id="previewCanvas" class="preview-canvas"></canvas><div class="preview-info" id="previewInfo"></div></div></div>
+<script src="icons.config.js"></script>
+<script>
+const S=300,cv=document.getElementById('mainCv'),ctx=cv.getContext('2d');
+let rawImage=null,layers=[],activeIdx=-1,iconCache={},history=[],historyIdx=-1,historyLock=!1;
+let isDrag=!1,isResize=!1,isRotate=!1,resizeCorner='',dragStartX=0,dragStartY=0,dragLayerStartX=0,dragLayerStartY=0,startSize=0,startRot=0,startMouseAngle=0;
+let renderRequestId=null;
+function showToast(t,e){const o=document.getElementById('toast');o.innerText=t;o.style.background=e?'rgba(255,59,48,0.9)':'rgba(0,0,0,0.8)';o.classList.add('show');setTimeout(()=>o.classList.remove('show'),1500);}
+function showLoading(s){document.getElementById('loadingOverlay').classList.toggle('show',s);}
+function rn(v){return Math.round(v);}
+function scheduleRender(){renderRequestId&&cancelAnimationFrame(renderRequestId);renderRequestId=requestAnimationFrame(()=>render());}
+function saveState(){if(historyLock)return;const s={rawImage:rawImage?{src:rawImage.src,w:rawImage.naturalWidth,h:rawImage.naturalHeight}:null,layers:JSON.parse(JSON.stringify(layers))};history=history.slice(0,historyIdx+1);history.push(s);history.length>50&&history.shift();historyIdx=history.length-1;document.getElementById('undoBtn').style.opacity=historyIdx>0?'1':'0.4';document.getElementById('redoBtn').style.opacity=historyIdx<history.length-1?'1':'0.4';}
+function undo(){if(historyIdx>0){historyLock=!0;historyIdx--;applyState(history[historyIdx]);historyLock=!1;document.getElementById('undoBtn').style.opacity=historyIdx>0?'1':'0.4';document.getElementById('redoBtn').style.opacity=historyIdx<history.length-1?'1':'0.4';scheduleRender();}}
+function redo(){if(historyIdx<history.length-1){historyLock=!0;historyIdx++;applyState(history[historyIdx]);historyLock=!1;document.getElementById('undoBtn').style.opacity=historyIdx>0?'1':'0.4';document.getElementById('redoBtn').style.opacity=historyIdx<history.length-1?'1':'0.4';scheduleRender();}}
+function applyState(s){if(s.rawImage){const i=new Image();i.onload=()=>{rawImage=i;document.getElementById('metaSize').innerText=`${i.naturalWidth} × ${i.naturalHeight}`;scheduleRender();};i.src=s.rawImage.src;}else{rawImage=null;document.getElementById('metaSize').innerText='未上传';}layers=JSON.parse(JSON.stringify(s.layers));activeIdx=activeIdx>=layers.length?layers.length-1:activeIdx;refreshLayerPanel();if(layers.length&&activeIdx>=0)showPropsBar();else hidePropsBar();scheduleRender();}
+function recordAndRender(){saveState();scheduleRender();}
+function getCanvasPos(x,y){const r=cv.getBoundingClientRect();return{x:rn((x-r.left)*(S/r.width)),y:rn((y-r.top)*(S/r.height))};}
+function getIconDrawSize(img,targetSize){const iw=img.naturalWidth,ih=img.naturalHeight;if(iw>=ih){const ratio=targetSize/iw;return{w:targetSize,h:ih*ratio};}else{const ratio=targetSize/ih;return{w:iw*ratio,h:targetSize};}}
+function renderToCanvas(targetCtx,targetS){targetCtx.clearRect(0,0,targetS,targetS);for(let y=0;y<targetS;y+=20)for(let x=0;x<targetS;x+=20)targetCtx.fillStyle=((x/20+y/20)%2===0)?'#f0f0f0':'#e6e6e6',targetCtx.fillRect(x,y,20,20);if(rawImage){const iw=rawImage.naturalWidth,ih=rawImage.naturalHeight,sz=Math.min(iw,ih),sx=(iw-sz)/2,sy=(ih-sz)/2;targetCtx.drawImage(rawImage,sx,sy,sz,sz,0,0,targetS,targetS);}for(const l of layers){if(l.type!=='icon')continue;const img=iconCache[l.file];if(!img)continue;const ds=getIconDrawSize(img,l.size);const scale=targetS/S;targetCtx.save();targetCtx.globalAlpha=l.opacity/100;targetCtx.translate(l.x*scale,l.y*scale);targetCtx.rotate(l.rot*Math.PI/180);targetCtx.scale(l.flipH?-1:1,l.flipV?-1:1);targetCtx.drawImage(img,-ds.w/2*scale,-ds.h/2*scale,ds.w*scale,ds.h*scale);targetCtx.restore();}}
+function render(){renderToCanvas(ctx,S);updateSelBox();}
+function showPreview(){if(!rawImage){showToast('请先上传图片',!0);return;}const previewCv=document.getElementById('previewCanvas');const previewCtx=previewCv.getContext('2d');const size=Math.min(rawImage.naturalWidth,rawImage.naturalHeight);previewCv.width=size;previewCv.height=size;previewCv.style.width='auto';previewCv.style.height='auto';previewCv.style.maxWidth='85vw';previewCv.style.maxHeight='70vh';renderToCanvas(previewCtx,size);document.getElementById('previewInfo').innerHTML=`<i class="fas fa-info-circle"></i> 导出尺寸 ${size}×${size}px · 图层 ${layers.length}个`;document.getElementById('previewModal').classList.add('show');}
+function updateSelBox(){const box=document.getElementById('selBox');if(activeIdx<0||!layers[activeIdx]){box.classList.remove('show');return;}const l=layers[activeIdx];const img=iconCache[l.file];if(!img){box.classList.remove('show');return;}const ds=getIconDrawSize(img,l.size);const w=ds.w,h=ds.h;const rad=l.rot*Math.PI/180,c=Math.cos(rad),s=Math.sin(rad);const corners=[{x:-w/2,y:-h/2},{x:w/2,y:-h/2},{x:-w/2,y:h/2},{x:w/2,y:h/2}].map(p=>({x:l.x+p.x*c-p.y*s,y:l.y+p.x*s+p.y*c}));const minX=Math.min(...corners.map(c=>c.x)),maxX=Math.max(...corners.map(c=>c.x)),minY=Math.min(...corners.map(c=>c.y)),maxY=Math.max(...corners.map(c=>c.y));box.style.left=(minX/S)*100+'%';box.style.top=(minY/S)*100+'%';box.style.width=((maxX-minX)/S)*100+'%';box.style.height=((maxY-minY)/S)*100+'%';box.style.transform='none';document.getElementById('selLabel').innerText=l.name;box.classList.add('show');}
+function refreshLayerPanel(){const c=document.getElementById('layerList');if(!layers.length){c.innerHTML='<div class="ly-empty"><i class="fas fa-layer-group"></i>暂无图层</div>';return;}c.innerHTML='';layers.forEach((l,i)=>{const d=document.createElement('div');d.className=`ly-item ${i===activeIdx?'sel':''}`;const t=document.createElement('div');t.className='ly-thumb';if(l.type==='icon'&&iconCache[l.file]){const im=document.createElement('img');im.src=l.file;t.appendChild(im);}else t.innerText='🖼',t.style.display='grid',t.style.placeItems='center',t.style.fontSize='14px';const inf=document.createElement('div');inf.className='ly-info';const nd=document.createElement('div');nd.className='ly-name';nd.innerText=l.name;const md=document.createElement('div');md.className='ly-meta';md.innerText=`图标 · ${l.opacity}%`;inf.append(nd,md);const a=document.createElement('div');a.className='ly-acts';const db=document.createElement('button');db.className='btn-icon del';db.innerHTML='<i class="fas fa-trash-alt"></i>';db.onclick=(e)=>{e.stopPropagation();layers.splice(i,1);if(activeIdx===i)activeIdx=layers.length?Math.min(activeIdx,layers.length-1):-1;else if(activeIdx>i)activeIdx--;refreshLayerPanel();recordAndRender();if(!layers.length)hidePropsBar();else showPropsBar();};d.onclick=()=>{activeIdx=i;refreshLayerPanel();scheduleRender();showPropsBar();};a.appendChild(db);d.append(t,inf,a);c.appendChild(d);});}
+function showPropsBar(){if(activeIdx<0){hidePropsBar();return;}const l=layers[activeIdx];document.getElementById('barSize').value=l.size;document.getElementById('barRotate').value=l.rot;document.getElementById('barOpacity').value=l.opacity;document.getElementById('barSizeVal').innerText=l.size;document.getElementById('barRotateVal').innerText=l.rot+'°';document.getElementById('barOpacityVal').innerText=l.opacity+'%';document.getElementById('propsBar').classList.add('show');}
+function hidePropsBar(){document.getElementById('propsBar').classList.remove('show');}
+function addIconLayer(f,n){if(!iconCache[f]){const i=new Image();i.src=f;i.onload=()=>{iconCache[f]=i;scheduleRender();};}layers.push({type:'icon',file:f,name:n,x:150,y:150,size:60,rot:0,opacity:100,flipH:!1,flipV:!1});activeIdx=layers.length-1;refreshLayerPanel();recordAndRender();showPropsBar();}
+function initGrid(){const g=document.getElementById('iconGrid');g.innerHTML='';if(typeof ICON_CONFIGS==='undefined'){g.innerHTML='<div style="color:red;padding:20px">图标配置加载失败</div>';return;}ICON_CONFIGS.forEach(f=>{const c=document.createElement('div');c.className='icon-card';const i=document.createElement('img');i.src=f.file;i.alt=f.name;i.onerror=()=>{i.style.display='none';const p=document.createElement('div');p.style.cssText='width:36px;height:36px;background:#e5e5e7;border-radius:8px;display:grid;place-items:center;font-size:10px;color:#999;';p.innerText='?';c.insertBefore(p,s);};i.onload=()=>{iconCache[f.file]=i;scheduleRender();};const s=document.createElement('div');s.className='pn';s.innerText=f.name;const ck=document.createElement('div');ck.className='ck';ck.innerHTML='<i class="fas fa-check"></i>';c.append(i,s,ck);g.appendChild(c);c.onclick=()=>{g.querySelectorAll('.icon-card').forEach(c=>c.classList.remove('on'));c.classList.add('on');addIconLayer(f.file,f.name);showToast(`已添加 ${f.name}`);setTimeout(()=>c.classList.remove('on'),500);};});}
+function cropToSquare(i){const iw=i.naturalWidth,ih=i.naturalHeight,sz=Math.min(iw,ih),sx=rn((iw-sz)/2),sy=rn((ih-sz)/2);const off=document.createElement('canvas');off.width=sz;off.height=sz;const octx=off.getContext('2d');octx.drawImage(i,sx,sy,sz,sz,0,0,sz,sz);const c=new Image();c.src=off.toDataURL();return c;}
+function bindUpload(){const ub=document.getElementById('uploadBox'),fi=document.getElementById('fileInput');ub.onclick=()=>fi.click();const process=(f)=>{if(!f||!f.type.startsWith('image/')){showToast('请选择图片文件',!0);return;}showLoading(!0);const r=new FileReader();r.onload=ev=>{const i=new Image();i.onload=()=>{rawImage=i;document.getElementById('metaSize').innerText=`${i.naturalWidth} × ${i.naturalHeight}`;if(i.naturalWidth!==i.naturalHeight){rawImage=cropToSquare(i);showToast('已自动裁剪为1:1方形');}render();saveState();showLoading(!1);showToast('图片上传成功');};i.src=ev.target.result;};r.onerror=()=>{showLoading(!1);showToast('加载失败',!0);};r.readAsDataURL(f);};fi.onchange=e=>{process(e.target.files[0]);fi.value='';};ub.ondragover=e=>e.preventDefault();ub.ondrop=e=>{e.preventDefault();process(e.dataTransfer.files[0]);};}
+function bindProps(){const sz=document.getElementById('barSize'),rt=document.getElementById('barRotate'),op=document.getElementById('barOpacity');const upd=()=>{if(activeIdx<0)return;const l=layers[activeIdx];l.size=rn(parseInt(sz.value));l.rot=rn(parseInt(rt.value));l.opacity=rn(parseInt(op.value));document.getElementById('barSizeVal').innerText=l.size;document.getElementById('barRotateVal').innerText=l.rot+'°';document.getElementById('barOpacityVal').innerText=l.opacity+'%';scheduleRender();recordAndRender();};sz.oninput=upd;rt.oninput=upd;op.oninput=upd;document.getElementById('barFlipH').onclick=()=>{if(activeIdx>=0){layers[activeIdx].flipH=!layers[activeIdx].flipH;recordAndRender();}};document.getElementById('barFlipV').onclick=()=>{if(activeIdx>=0){layers[activeIdx].flipV=!layers[activeIdx].flipV;recordAndRender();}};document.getElementById('barResetPos').onclick=()=>{if(activeIdx>=0){const l=layers[activeIdx];l.x=150;l.y=150;l.size=60;l.rot=0;l.opacity=100;l.flipH=!1;l.flipV=!1;sz.value=60;rt.value=0;op.value=100;document.getElementById('barSizeVal').innerText=60;document.getElementById('barRotateVal').innerText='0°';document.getElementById('barOpacityVal').innerText='100%';recordAndRender();showToast('已重置');}};document.getElementById('barDel').onclick=()=>{if(activeIdx>=0){const n=layers[activeIdx].name;layers.splice(activeIdx,1);activeIdx=layers.length?Math.min(activeIdx,layers.length-1):-1;refreshLayerPanel();recordAndRender();if(!layers.length)hidePropsBar();else showPropsBar();showToast(`已删除 ${n}`);}};}
+function bindCanvasDrag(){const f=document.getElementById('canvasFrame');function getAngle(cx,cy){if(activeIdx<0)return 0;const l=layers[activeIdx],p=getCanvasPos(cx,cy);return Math.atan2(p.y-l.y,p.x-l.x)*180/Math.PI;}function hitCorner(cx,cy){const b=document.getElementById('selBox');if(!b.classList.contains('show')||activeIdx<0)return null;const r=b.getBoundingClientRect();if(Math.abs(cx-r.left)<=20&&Math.abs(cy-r.top)<=20)return'tl';if(Math.abs(cx-r.right)<=20&&Math.abs(cy-r.top)<=20)return'tr';if(Math.abs(cx-r.left)<=20&&Math.abs(cy-r.bottom)<=20)return'bl';if(Math.abs(cx-r.right)<=20&&Math.abs(cy-r.bottom)<=20)return'br';const cx_=r.left+r.width/2;if(Math.abs(cx-cx_)<=18&&cy>=r.top-42&&cy<=r.top-18)return'rotate';return null;}
+function start(x,y){const c=hitCorner(x,y);if(c==='rotate'&&activeIdx>=0){isRotate=!0;startMouseAngle=getAngle(x,y);startRot=layers[activeIdx].rot;f.style.cursor='grabbing';return;}if(c&&c!=='rotate'&&activeIdx>=0){isResize=!0;resizeCorner=c;startSize=layers[activeIdx].size;dragStartX=x;dragStartY=y;f.style.cursor='nw-resize';return;}const p=getCanvasPos(x,y);let h=-1;for(let i=layers.length-1;i>=0;i--){const l=layers[i];const img=iconCache[l.file];if(!img)continue;const ds=getIconDrawSize(img,l.size);const rx=ds.w/2+10,ry=ds.h/2+10;if(Math.abs(p.x-l.x)<=rx&&Math.abs(p.y-l.y)<=ry){h=i;break;}}if(h>=0&&h!==activeIdx){activeIdx=h;refreshLayerPanel();showPropsBar();scheduleRender();}if(activeIdx<0)return;isDrag=!0;dragStartX=x;dragStartY=y;dragLayerStartX=layers[activeIdx].x;dragLayerStartY=layers[activeIdx].y;f.style.cursor='grabbing';}
+function move(x,y){if(isResize&&activeIdx>=0){const n=getCanvasPos(x,y),s=getCanvasPos(dragStartX,dragStartY);let d=0;if(resizeCorner==='br')d=(n.x-s.x)+(n.y-s.y);else if(resizeCorner==='bl')d=-(n.x-s.x)+(n.y-s.y);else if(resizeCorner==='tr')d=(n.x-s.x)-(n.y-s.y);else d=-(n.x-s.x)-(n.y-s.y);let ns=rn(Math.min(400,Math.max(8,startSize+d)));if(ns!==layers[activeIdx].size){layers[activeIdx].size=ns;document.getElementById('barSize').value=ns;document.getElementById('barSizeVal').innerText=ns;scheduleRender();}}else if(isRotate&&activeIdx>=0){const ca=getAngle(x,y);let nr=rn((startRot+(ca-startMouseAngle)+360)%360);if(nr!==layers[activeIdx].rot){layers[activeIdx].rot=nr;document.getElementById('barRotate').value=nr;document.getElementById('barRotateVal').innerText=nr+'°';scheduleRender();}}else if(isDrag&&activeIdx>=0){const n=getCanvasPos(x,y),s=getCanvasPos(dragStartX,dragStartY);let nx=rn(Math.min(S,Math.max(0,dragLayerStartX+(n.x-s.x)))),ny=rn(Math.min(S,Math.max(0,dragLayerStartY+(n.y-s.y))));if(nx!==layers[activeIdx].x||ny!==layers[activeIdx].y){layers[activeIdx].x=nx;layers[activeIdx].y=ny;scheduleRender();}}}
+function end(){if(isDrag||isResize||isRotate){if(activeIdx>=0)recordAndRender();}isDrag=isResize=isRotate=!1;f.style.cursor='grab';}
+f.addEventListener('touchstart',e=>{if(e.touches.length===1){e.preventDefault();start(e.touches[0].clientX,e.touches[0].clientY);}},{passive:!1});f.addEventListener('touchmove',e=>{if(isDrag||isResize||isRotate)e.preventDefault();if(e.touches.length===1)move(e.touches[0].clientX,e.touches[0].clientY);},{passive:!1});f.addEventListener('touchend',end);f.addEventListener('mousedown',e=>start(e.clientX,e.clientY));window.addEventListener('mousemove',e=>move(e.clientX,e.clientY));window.addEventListener('mouseup',end);f.style.cursor='grab';}
+function bindDoubleClickReset(){document.getElementById('canvasFrame').addEventListener('dblclick',()=>{if(activeIdx>=0){const l=layers[activeIdx];l.x=150;l.y=150;l.size=60;l.rot=0;l.opacity=100;l.flipH=!1;l.flipV=!1;document.getElementById('barSize').value=60;document.getElementById('barRotate').value=0;document.getElementById('barOpacity').value=100;document.getElementById('barSizeVal').innerText=60;document.getElementById('barRotateVal').innerText='0°';document.getElementById('barOpacityVal').innerText='100%';recordAndRender();showToast(`已重置 ${l.name}`);}});}
+function bindExport(){document.getElementById('exportBtn').onclick=()=>{if(!rawImage){showToast('请先上传图片',!0);return;}showLoading(!0);setTimeout(()=>{const iw=rawImage.naturalWidth,ih=rawImage.naturalHeight,sz=Math.min(iw,ih),down=document.createElement('canvas');down.width=sz;down.height=sz;const dctx=down.getContext('2d');const sx=(iw-sz)/2,sy=(ih-sz)/2;dctx.drawImage(rawImage,sx,sy,sz,sz,0,0,sz,sz);const sc=S/sz;for(const l of layers){if(l.type!=='icon')continue;const img=iconCache[l.file];if(!img)continue;const ds=getIconDrawSize(img,l.size);dctx.save();dctx.globalAlpha=l.opacity/100;const rx=rn(l.x/sc),ry=rn(l.y/sc);dctx.translate(rx,ry);dctx.rotate(l.rot*Math.PI/180);dctx.scale(l.flipH?-1:1,l.flipV?-1:1);dctx.drawImage(img,-ds.w/2,-ds.h/2,ds.w,ds.h);dctx.restore();}const a=document.createElement('a');a.href=down.toDataURL('image/png');a.download=`MC头像_${sz}x${sz}.png`;a.click();showLoading(!1);showToast(`已导出 ${sz}×${sz}px`);},50);};}
+let curDrawer=null;
+window.openDrawer=function(t){const btns=document.querySelectorAll('.tab-btn');btns.forEach((b,i)=>b.classList.toggle('on',(i===0&&t==='upload')||(i===1&&t==='layers')));const m={upload:'drawerUpload',layers:'drawerLayers'},tid=m[t];if(!tid)return;if(curDrawer===tid){closeDrawer();return;}document.querySelectorAll('.drawer').forEach(d=>d.classList.remove('show'));document.getElementById('overlay').classList.add('show');document.getElementById(tid).classList.add('show');curDrawer=tid;};
+window.closeDrawer=function(){document.querySelectorAll('.drawer').forEach(d=>d.classList.remove('show'));document.getElementById('overlay').classList.remove('show');curDrawer=null;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));};
+document.querySelectorAll('.drawer').forEach(d=>{let sy=0;d.addEventListener('touchstart',e=>sy=e.touches[0].clientY,{passive:!0});d.addEventListener('touchmove',e=>{if(e.touches[0].clientY-sy>80)closeDrawer();},{passive:!0});});
+document.getElementById('undoBtn').onclick=undo;document.getElementById('redoBtn').onclick=redo;
+document.getElementById('previewBtn').onclick=showPreview;
+document.getElementById('closePreviewBtn').onclick=()=>document.getElementById('previewModal').classList.remove('show');
+document.getElementById('previewModal').onclick=(e)=>{if(e.target===document.getElementById('previewModal'))document.getElementById('previewModal').classList.remove('show');};
+function initTheme(){const saved=localStorage.getItem('mc_theme');const isDark=saved==='dark';if(isDark)document.body.classList.add('dark');const btn=document.getElementById('themeBtn');if(btn)btn.innerHTML=isDark?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>';}
+function toggleTheme(){const isDark=document.body.classList.toggle('dark');localStorage.setItem('mc_theme',isDark?'dark':'light');const btn=document.getElementById('themeBtn');if(btn)btn.innerHTML=isDark?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>';}
+document.getElementById('themeBtn').onclick=toggleTheme;
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undo();}else if((e.ctrlKey||e.metaKey)&&e.key==='z'&&e.shiftKey){e.preventDefault();redo();}});
+window.onload=()=>{initTheme();initGrid();bindUpload();bindProps();bindCanvasDrag();bindDoubleClickReset();bindExport();saveState();render();};
+</script>
 </body>
 </html>

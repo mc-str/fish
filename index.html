@@ -12,39 +12,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:4px}
-:root{
-  --bg:#f5f5f7;
-  --panel:rgba(255,255,255,0.72);
-  --panel-blur:blur(20px);
-  --card:rgba(255,255,255,0.9);
-  --border:rgba(0,0,0,0.06);
-  --border-light:rgba(0,0,0,0.04);
-  --fg:#1d1d1f;
-  --fg2:#6e6e73;
-  --muted:#86868b;
-  --accent:#007aff;
-  --accent-light:rgba(0,122,255,0.12);
-  --red:#ff3b30;
-  --red-light:rgba(255,59,48,0.12);
-  --shadow-sm:0 2px 8px rgba(0,0,0,0.04),0 0 0 0.5px rgba(0,0,0,0.02);
-  --shadow-md:0 8px 24px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.02);
-  --shadow-lg:0 20px 40px rgba(0,0,0,0.08),0 0 0 0.5px rgba(0,0,0,0.02);
-  --bottom-h:60px;
-}
-body.dark{
-  --bg:#0a0a0c;
-  --panel:rgba(28,28,30,0.85);
-  --card:rgba(28,28,30,0.95);
-  --border:rgba(255,255,255,0.08);
-  --border-light:rgba(255,255,255,0.04);
-  --fg:#ffffff;
-  --fg2:#8e8e93;
-  --muted:#636366;
-  --accent:#0a84ff;
-  --accent-light:rgba(10,132,255,0.16);
-  --red:#ff453a;
-  --red-light:rgba(255,69,58,0.16);
-}
+:root{--bg:#f5f5f7;--panel:rgba(255,255,255,0.72);--panel-blur:blur(20px);--card:rgba(255,255,255,0.9);--border:rgba(0,0,0,0.06);--border-light:rgba(0,0,0,0.04);--fg:#1d1d1f;--fg2:#6e6e73;--muted:#86868b;--accent:#007aff;--accent-light:rgba(0,122,255,0.12);--red:#ff3b30;--red-light:rgba(255,59,48,0.12);--shadow-sm:0 2px 8px rgba(0,0,0,0.04),0 0 0 0.5px rgba(0,0,0,0.02);--shadow-md:0 8px 24px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.02);--shadow-lg:0 20px 40px rgba(0,0,0,0.08),0 0 0 0.5px rgba(0,0,0,0.02);--bottom-h:60px}
+body.dark{--bg:#0a0a0c;--panel:rgba(28,28,30,0.85);--card:rgba(28,28,30,0.95);--border:rgba(255,255,255,0.08);--border-light:rgba(255,255,255,0.04);--fg:#ffffff;--fg2:#8e8e93;--muted:#636366;--accent:#0a84ff;--accent-light:rgba(10,132,255,0.16);--red:#ff453a;--red-light:rgba(255,69,58,0.16)}
 .app{display:flex;flex-direction:column;height:100dvh;background:var(--bg);transition:background .3s}
 .topbar{background:var(--panel);backdrop-filter:var(--panel-blur);-webkit-backdrop-filter:var(--panel-blur);border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;flex-shrink:0}
 .topbar-left{display:flex;align-items:center;gap:16px}
@@ -239,7 +208,7 @@ function move(x,y){if(isResize&&activeIdx>=0){const n=getCanvasPos(x,y),s=getCan
 function end(){if(isDrag||isResize||isRotate){if(activeIdx>=0)recordAndRender();}isDrag=isResize=isRotate=!1;f.style.cursor='grab';}
 f.addEventListener('touchstart',e=>{if(e.touches.length===1){e.preventDefault();start(e.touches[0].clientX,e.touches[0].clientY);}},{passive:!1});f.addEventListener('touchmove',e=>{if(isDrag||isResize||isRotate)e.preventDefault();if(e.touches.length===1)move(e.touches[0].clientX,e.touches[0].clientY);},{passive:!1});f.addEventListener('touchend',end);f.addEventListener('mousedown',e=>start(e.clientX,e.clientY));window.addEventListener('mousemove',e=>move(e.clientX,e.clientY));window.addEventListener('mouseup',end);f.style.cursor='grab';}
 function bindDoubleClickReset(){document.getElementById('canvasFrame').addEventListener('dblclick',()=>{if(activeIdx>=0){const l=layers[activeIdx];l.x=150;l.y=150;l.size=60;l.rot=0;l.opacity=100;l.flipH=!1;l.flipV=!1;document.getElementById('barSize').value=60;document.getElementById('barRotate').value=0;document.getElementById('barOpacity').value=100;document.getElementById('barSizeVal').innerText=60;document.getElementById('barRotateVal').innerText='0°';document.getElementById('barOpacityVal').innerText='100%';recordAndRender();showToast(`已重置 ${l.name}`);}});}
-function bindExport(){document.getElementById('exportBtn').onclick=()=>{if(!rawImage){showToast('请先上传图片',!0);return;}showLoading(!0);setTimeout(()=>{const iw=rawImage.naturalWidth,ih=rawImage.naturalHeight,sz=Math.min(iw,ih),down=document.createElement('canvas');down.width=sz;down.height=sz;const dctx=down.getContext('2d');const sx=(iw-sz)/2,sy=(ih-sz)/2;dctx.drawImage(rawImage,sx,sy,sz,sz,0,0,sz,sz);const sc=S/sz;for(const l of layers){if(l.type!=='icon')continue;const img=iconCache[l.file];if(!img)continue;const ds=getIconDrawSize(img,l.size);dctx.save();dctx.globalAlpha=l.opacity/100;const rx=rn(l.x/sc),ry=rn(l.y/sc);dctx.translate(rx,ry);dctx.rotate(l.rot*Math.PI/180);dctx.scale(l.flipH?-1:1,l.flipV?-1:1);dctx.drawImage(img,-ds.w/2,-ds.h/2,ds.w,ds.h);dctx.restore();}const a=document.createElement('a');a.href=down.toDataURL('image/png');a.download=`MC头像_${sz}x${sz}.png`;a.click();showLoading(!1);showToast(`已导出 ${sz}×${sz}px`);},50);};}
+function bindExport(){document.getElementById('exportBtn').onclick=()=>{if(!rawImage){showToast('请先上传图片',!0);return;}showLoading(!0);setTimeout(()=>{const iw=rawImage.naturalWidth,ih=rawImage.naturalHeight,sz=Math.min(iw,ih),down=document.createElement('canvas');down.width=sz;down.height=sz;const dctx=down.getContext('2d');const sx=(iw-sz)/2,sy=(ih-sz)/2;dctx.drawImage(rawImage,sx,sy,sz,sz,0,0,sz,sz);for(const l of layers){if(l.type!=='icon')continue;const img=iconCache[l.file];if(!img)continue;const ds=getIconDrawSize(img,l.size);dctx.save();dctx.globalAlpha=l.opacity/100;dctx.translate(l.x,l.y);dctx.rotate(l.rot*Math.PI/180);dctx.scale(l.flipH?-1:1,l.flipV?-1:1);dctx.drawImage(img,-ds.w/2,-ds.h/2,ds.w,ds.h);dctx.restore();}const a=document.createElement('a');a.href=down.toDataURL('image/png');a.download=`MC头像_${sz}x${sz}.png`;a.click();showLoading(!1);showToast(`已导出 ${sz}×${sz}px`);},50);};}
 let curDrawer=null;
 window.openDrawer=function(t){const btns=document.querySelectorAll('.tab-btn');btns.forEach((b,i)=>b.classList.toggle('on',(i===0&&t==='upload')||(i===1&&t==='layers')));const m={upload:'drawerUpload',layers:'drawerLayers'},tid=m[t];if(!tid)return;if(curDrawer===tid){closeDrawer();return;}document.querySelectorAll('.drawer').forEach(d=>d.classList.remove('show'));document.getElementById('overlay').classList.add('show');document.getElementById(tid).classList.add('show');curDrawer=tid;};
 window.closeDrawer=function(){document.querySelectorAll('.drawer').forEach(d=>d.classList.remove('show'));document.getElementById('overlay').classList.remove('show');curDrawer=null;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));};
